@@ -483,12 +483,7 @@ onAuthStateChanged(auth, async user => {
         <tfoot id="as-foot"></tfoot>
       </table>
     </div>
-    <div style="margin-top:10px;font-size:.76rem;color:var(--tx2)">
-      <strong>Estado:</strong> 
-      <span style="background:var(--vl);border-radius:6px;padding:2px 8px;color:var(--verde);font-weight:700">o = regular</span>
-      <span style="margin-left:6px;background:var(--al);border-radius:6px;padding:2px 8px;color:var(--azul);font-weight:700">a = alta</span>
-      <span style="margin-left:6px;background:var(--rl);border-radius:6px;padding:2px 8px;color:var(--rojo);font-weight:700">x = baja/traslado</span>
-    </div>
+    
   </div>
 </div>
 
@@ -870,14 +865,19 @@ function setNivel(k,fi,n,restore=false){
 
   let texto='';
   const contIdx=estado[k][fi].cont;
-  const pdaIdx=estado[k][fi].pdaIdx;
+  // Leer pdaIdx del estado o del select (por si no se actualizó)
+  let pdaIdx=estado[k][fi].pdaIdx;
+  if(pdaIdx===null){
+    const pSel=document.getElementById(`p-${k}-${fi}`);
+    if(pSel && pSel.value!=='') pdaIdx=parseInt(pSel.value);
+  }
 
   if(contIdx!==null && pdaIdx!==null){
     const pda=D[k][contIdx].pdas[pdaIdx];
-    texto=pda[String(n)]||'';
+    if(pda) texto=pda[String(n)]||'';
   } else if(contIdx!==null){
-    const pdas=D[k][contIdx].pdas.filter(p=>p.nivel_proceso===GRADO_NP[gradoActual]);
-    if(pdas.length>0) texto=pdas[0][String(n)]||'';
+    // Sin PDA seleccionado: mostrar texto genérico del nivel, no de un PDA específico
+    texto='';
   }
 
   const nr=document.getElementById(`nr-${k}-${fi}`);
