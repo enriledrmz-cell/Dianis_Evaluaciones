@@ -510,7 +510,6 @@ onAuthStateChanged(auth, async user => {
     <h2>📝 Nueva Observación</h2>
     <div class="eg">
       <div class="fg"><label>Alumno</label><select id="ob-al"><option value="">— Selecciona —</option></select></div>
-      <div class="fg"><label>Fecha</label><input type="date" id="ob-fecha"></div>
     </div>
     <div class="fg" style="margin-bottom:12px">
       <label>Observación</label>
@@ -566,14 +565,12 @@ function sObs(a){localStorage.setItem('d_ob',JSON.stringify(a))}
 function guardarObs(){
   const al=document.getElementById('ob-al').value;
   const txt=document.getElementById('ob-txt').value.trim();
-  const fechaInp=document.getElementById('ob-fecha').value;
   if(!al){alert('Selecciona un alumno antes de guardar.');return;}
   if(!txt){alert('Escribe una observación antes de guardar.');return;}
-  const fecha=fechaInp?new Date(fechaInp+'T00:00:00').toLocaleDateString('es-MX'):new Date().toLocaleDateString('es-MX');
+  const fecha=new Date().toLocaleDateString('es-MX');
   const reg={id:Date.now(),al,fecha,txt};
   const obs=gObs();obs.push(reg);sObs(obs);
   document.getElementById('ob-txt').value='';
-  document.getElementById('ob-fecha').value='';
   alert(`✅ Observación de ${al} guardada.`);
   buildOb();
 }
