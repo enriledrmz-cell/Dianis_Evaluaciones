@@ -17,7 +17,6 @@ function esc(value){
 
 // Estado por campo
 const estado={};
-CK.forEach(k=>{estado[k]={cont:null,pdaIdx:null,nivel:null}});
 
 function gAl(){try{return JSON.parse(localStorage.getItem('d_al')||'[]')}catch(e){return[]}}
 function sAl(a){localStorage.setItem('d_al',JSON.stringify(a))}
@@ -345,17 +344,18 @@ function delAl(i){
 }
 
 // ─── FORM ───
-// Estado: por campo, array de filas [{cont, pdaIdx, nivel}]
+// Estado: por campo, array de filas [{cont, pdaIdx, niveles:{ [nombreAlumno]: nivel }}]
+// El contenido y el PDA se comparten entre los alumnos seleccionados,
+// pero el nivel de desempeño se guarda de forma individual por alumno.
 CK.forEach(k=>{estado[k]=[]});
 
 function buildForm(){
   const w=document.getElementById('campos-wrap');
   w.innerHTML='';
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,nivel:null}]; // empezar con 1 fila
-    renderCampo(k);
+    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}]; // empezar con 1 fila
   });
-  onEvAlumnoChange();
+  onEvAlumnoChange(); // dibuja recomendaciones y niveles según alumnos seleccionados
 }
 function getSelectedAlumnos(){
   const sel=document.getElementById('s-al');
@@ -377,15 +377,21 @@ function deseleccionarTodosAl(){
 function onEvAlumnoChange(){
   const alumnos=getSelectedAlumnos();
   const wrap=document.getElementById('ev-rec-wrap');
-  if(!wrap)return;
-  if(!alumnos.length){wrap.innerHTML='';return;}
-  wrap.innerHTML=alumnos.map((al,i)=>{
-    const header=alumnos.length>1
-      ? `<div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.8rem;color:#1B4F72;margin:${i>0?'14px':'0'} 0 6px">👤 ${esc(al)}</div>`
-      : '';
-    return header+recBoxHTML('ev-'+i,al);
-  }).join('');
-  alumnos.forEach((al,i)=>pintarRecList('ev-'+i,al));
+  if(wrap){
+    if(!alumnos.length){
+      wrap.innerHTML='';
+    }else{
+      wrap.innerHTML=alumnos.map((al,i)=>{
+        const header=alumnos.length>1
+          ? `<div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.8rem;color:#1B4F72;margin:${i>0?'14px':'0'} 0 6px">👤 ${esc(al)}</div>`
+          : '';
+        return header+recBoxHTML('ev-'+i,al);
+      }).join('');
+      alumnos.forEach((al,i)=>pintarRecList('ev-'+i,al));
+    }
+  }
+  // Redibuja los botones de Nivel de Desempeño: uno por alumno seleccionado
+  CK.forEach(k=>renderCampo(k));
 }
 
 function renderCampo(k){
@@ -393,6 +399,7 @@ function renderCampo(k){
   const m=CMETA[k];
   const conts=D[k];
   const contOpts=conts.map((c,i)=>`<option value="${i}">${c.nombre}</option>`).join('');
+  const alumnos=getSelectedAlumnos();
 
   // Eliminar card existente si hay
   const old=document.getElementById(`card-${k}`);
@@ -403,7 +410,20 @@ function renderCampo(k){
   div.id=`card-${k}`;
 
   // Filas actuales
-  const filasHTML=estado[k].map((fila,fi)=>`
+  const filasHTML=estado[k].map((fila,fi)=>{
+    const nivelesHTML=alumnos.length
+      ? alumnos.map((al,ai)=>`
+        <div style="margin-top:${ai>0?'10px':'0'}">
+          ${alumnos.length>1?`<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:.72rem;color:#64748B;margin-bottom:4px">👤 ${esc(al)}</div>`:''}
+          <div class="nv-row">
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-1" onclick="setNivel('${k}',${fi},${ai},1)">1<small>Req. apoyo</small></button>
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-2" onclick="setNivel('${k}',${fi},${ai},2)">2<small>En proceso</small></button>
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-3" onclick="setNivel('${k}',${fi},${ai},3)">3<small>Esperado</small></button>
+          </div>
+          <div class="nv-result" id="nr-${k}-${fi}-${ai}"></div>
+        </div>`).join('')
+      : `<div style="color:#94A3B8;font-size:.8rem">Selecciona al menos un alumno para calificar.</div>`;
+    return `
     <div class="fila-eval" id="fila-${k}-${fi}" style="border:1.5px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;position:relative">
       ${estado[k].length>1?`<button onclick="delFila('${k}',${fi})" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#94A3B8;font-size:1rem;cursor:pointer;line-height:1" title="Eliminar">✕</button>`:''}
       <div style="margin-bottom:8px">
@@ -414,20 +434,16 @@ function renderCampo(k){
       </div>
       <div style="margin-bottom:8px">
         <div class="fl">Proceso de Desarrollo y Aprendizaje</div>
-        <select class="sc" id="p-${k}-${fi}">
+        <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})">
           <option value="">— Selecciona primero el contenido —</option>
         </select>
       </div>
       <div>
         <div class="fl">Nivel de Desempeño</div>
-        <div class="nv-row">
-          <button class="nv-btn" id="nb-${k}-${fi}-1" onclick="setNivel('${k}',${fi},1)">1<small>Req. apoyo</small></button>
-          <button class="nv-btn" id="nb-${k}-${fi}-2" onclick="setNivel('${k}',${fi},2)">2<small>En proceso</small></button>
-          <button class="nv-btn" id="nb-${k}-${fi}-3" onclick="setNivel('${k}',${fi},3)">3<small>Esperado</small></button>
-        </div>
-        <div class="nv-result" id="nr-${k}-${fi}"></div>
+        ${nivelesHTML}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   div.innerHTML=`
     <div class="cc-head" style="background:${m.color}">${m.emoji} ${m.label}</div>
@@ -437,7 +453,7 @@ function renderCampo(k){
     </div>`;
   w.appendChild(div);
 
-  // Restaurar selects si ya tenían valor
+  // Restaurar selects y niveles si ya tenían valor
   estado[k].forEach((fila,fi)=>{
     if(fila.cont!==null){
       const cSel=document.getElementById(`c-${k}-${fi}`);
@@ -446,13 +462,16 @@ function renderCampo(k){
         const pSel=document.getElementById(`p-${k}-${fi}`);
         if(pSel) pSel.value=fila.pdaIdx;
       }
-      if(fila.nivel) setNivel(k,fi,fila.nivel,true);
     }
+    alumnos.forEach((al,ai)=>{
+      const n=fila.niveles&&fila.niveles[al];
+      if(n) setNivel(k,fi,ai,n,true);
+    });
   });
 }
 
 function addFila(k){
-  estado[k].push({cont:null,pdaIdx:null,nivel:null});
+  estado[k].push({cont:null,pdaIdx:null,niveles:{}});
   renderCampo(k);
   // Scroll a la nueva fila
   const card=document.getElementById(`card-${k}`);
@@ -469,9 +488,11 @@ function onCont(k,fi,restore=false){
   if(!restore){
     estado[k][fi].cont=idx===''?null:parseInt(idx);
     estado[k][fi].pdaIdx=null;
-    estado[k][fi].nivel=null;
-    [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${n}`); if(b)b.className='nv-btn'; });
-    const nr=document.getElementById(`nr-${k}-${fi}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
+    estado[k][fi].niveles={};
+    getSelectedAlumnos().forEach((al,ai)=>{
+      [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`); if(b)b.className='nv-btn'; });
+      const nr=document.getElementById(`nr-${k}-${fi}-${ai}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
+    });
   }
   const pSel=document.getElementById(`p-${k}-${fi}`);
   if(!pSel) return;
@@ -489,13 +510,22 @@ function onPDA(k,fi){
   if(!pSel) return;
   const pIdx=pSel.value;
   estado[k][fi].pdaIdx=pIdx===''?null:parseInt(pIdx);
-  if(estado[k][fi].nivel) setNivel(k,fi,estado[k][fi].nivel);
+  // Refresca el texto de nivel de cada alumno que ya tuviera uno elegido
+  getSelectedAlumnos().forEach((al,ai)=>{
+    const n=estado[k][fi].niveles&&estado[k][fi].niveles[al];
+    if(n) setNivel(k,fi,ai,n);
+  });
 }
 
-function setNivel(k,fi,n,restore=false){
-  estado[k][fi].nivel=n;
-  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${i}`); if(b)b.className='nv-btn'; });
-  const btn=document.getElementById(`nb-${k}-${fi}-${n}`);
+function setNivel(k,fi,ai,n,restore=false){
+  const alumnos=getSelectedAlumnos();
+  const al=alumnos[ai];
+  if(al===undefined) return;
+  if(!estado[k][fi].niveles) estado[k][fi].niveles={};
+  estado[k][fi].niveles[al]=n;
+
+  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${i}`); if(b)b.className='nv-btn'; });
+  const btn=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`);
   if(btn)btn.className=`nv-btn s${n}`;
 
   let texto='';
@@ -515,7 +545,7 @@ function setNivel(k,fi,n,restore=false){
     texto='';
   }
 
-  const nr=document.getElementById(`nr-${k}-${fi}`);
+  const nr=document.getElementById(`nr-${k}-${fi}-${ai}`);
   if(!nr) return;
   if(!texto){
     const gen={1:'Requiere apoyo constante del docente para alcanzar los aprendizajes esperados.',
@@ -529,7 +559,7 @@ function setNivel(k,fi,n,restore=false){
 
 function limpiar(){
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,nivel:null}];
+    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}];
     renderCampo(k);
   });
 }
@@ -538,21 +568,23 @@ function guardar(){
   const alumnos=getSelectedAlumnos();
   const mes=document.getElementById('s-mes').value;
   if(!alumnos.length){alert('Selecciona al menos un alumno antes de guardar.');return;}
-  const campos={};
-  CK.forEach(k=>{
-    campos[k]=estado[k].map(fila=>{
-      const contIdx=fila.cont;
-      const pdaIdx=fila.pdaIdx;
-      const niv=fila.nivel;
-      const contNombre=contIdx!==null?D[k][contIdx].nombre:'';
-      const pdaTxt=contIdx!==null&&pdaIdx!==null?D[k][contIdx].pdas[pdaIdx].texto:'';
-      let nivelTxt='';
-      if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][String(niv)]||'';
-      return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
-    }).filter(f=>f.cont||f.pda||f.niv);
-  });
   const evs=gEv();
-  alumnos.forEach(al=>evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+Math.floor(Math.random()*100000),campos:JSON.parse(JSON.stringify(campos))}));
+  alumnos.forEach((al,ai)=>{
+    const campos={};
+    CK.forEach(k=>{
+      campos[k]=estado[k].map(fila=>{
+        const contIdx=fila.cont;
+        const pdaIdx=fila.pdaIdx;
+        const niv=fila.niveles?fila.niveles[al]:null;
+        const contNombre=contIdx!==null?D[k][contIdx].nombre:'';
+        const pdaTxt=contIdx!==null&&pdaIdx!==null?D[k][contIdx].pdas[pdaIdx].texto:'';
+        let nivelTxt='';
+        if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][String(niv)]||'';
+        return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
+      }).filter(f=>f.cont||f.pda||f.niv);
+    });
+    evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+Math.floor(Math.random()*100000)+ai,campos});
+  });
   window.sEv(evs);
   alert(`✅ Evaluación guardada para ${alumnos.length} alumno${alumnos.length>1?'s':''}.`);
   limpiar();
