@@ -9,23 +9,30 @@ const NL={'1':'Requiere apoyo','2':'En proceso','3':'Esperado'};
 const NB={'1':'b1','2':'b2','3':'b3'};
 const NR={'1':'r1','2':'r2','3':'r3'};
 const NE={'1':'🔴','2':'🟡','3':'🟢'};
+// El Excel trae cuatro descriptores; la app usa tres categorías docentes.
+// Se conserva el catálogo completo, pero el texto mostrado se adapta a estas categorías.
+const NIVEL_EXCEL={'1':'4','2':'3','3':'1'};
+function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-// Evita que nombres y textos guardados se interpreten como HTML.
-function esc(value){
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-}
+try{
+  const personalizado=JSON.parse(localStorage.getItem('d_catalogo')||'{}');
+  CK.forEach(k=>{if(personalizado[k]) D[k]=personalizado[k];});
+}catch(e){console.warn('No se pudo cargar el catálogo personalizado',e)}
+function guardarCatalogo(){try{localStorage.setItem('d_catalogo',JSON.stringify(D));}catch(e){console.warn('No se pudo guardar el catálogo',e)}}
 
 // Estado por campo
 const estado={};
+CK.forEach(k=>{estado[k]={cont:null,pdaIdx:null,nivel:null}});
 
 function gAl(){try{return JSON.parse(localStorage.getItem('d_al')||'[]')}catch(e){return[]}}
-function sAl(a){localStorage.setItem('d_al',JSON.stringify(a))}
+function safeStore(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.warn('No se pudo guardar localmente',e);return false}}
+function sAl(a){safeStore('d_al',a)}
 function gEv(){try{return JSON.parse(localStorage.getItem('d_ev')||'[]')}catch(e){return[]}}
-function sEv(a){localStorage.setItem('d_ev',JSON.stringify(a))}
+function sEv(a){safeStore('d_ev',a)}
 function gObs(){try{return JSON.parse(localStorage.getItem('d_ob')||'[]')}catch(e){return[]}}
-function sObs(a){localStorage.setItem('d_ob',JSON.stringify(a))}
+function sObs(a){safeStore('d_ob',a)}
 function gRec(){try{const r=JSON.parse(localStorage.getItem('d_rec')||'{}');Object.keys(r).forEach(k=>{if(typeof r[k]==='string'){r[k]=r[k]?r[k].split('\n').map(s=>s.replace(/^•\s*/,'').trim()).filter(Boolean):[];}});return r;}catch(e){return{}}}
-function sRec(o){localStorage.setItem('d_rec',JSON.stringify(o))}
+function sRec(o){safeStore('d_rec',o)}
 function recListStaticHTML(al){
   const arr=(gRec()[al]||[]);
   if(!arr.length)return'';
@@ -148,7 +155,7 @@ const AS_ALUMNOS_DEFAULT=[
 const AS_TOTALES_DEFAULT={sep:19,oct:21,nov:17,dic:15,ene:14,feb:11,mzo:17,abr:14,may:15,jun:null,jul:null};
 
 function gAs(){try{return JSON.parse(localStorage.getItem('d_as')||'null')}catch(e){return null}}
-function sAs(d){localStorage.setItem('d_as',JSON.stringify(d))}
+function sAs(d){safeStore('d_as',d)}
 window.sAl=sAl; window.sEv=sEv; window.sAs=sAs; window.sObs=sObs;
 
 function buildAsistencia(){
@@ -316,7 +323,7 @@ function exportarAsistencia(){
 function renderAl(){
   const al=gAl();
   document.getElementById('al-list').innerHTML=al.map((a,i)=>
-    `<li class="atag">${esc(a)} <button aria-label="Eliminar a ${esc(a)}" onclick="delAl(${i})">✕</button></li>`).join('');
+    `<li class="atag"><span>${esc(a)}</span><button aria-label="Editar a ${esc(a)}" onclick="editAl(${i})">✎</button><button aria-label="Eliminar a ${esc(a)}" onclick="delAl(${i})">✕</button></li>`).join('');
   document.getElementById('al-cnt').textContent=al.length?`${al.length} alumno${al.length>1?'s':''} registrado${al.length>1?'s':''}.`:'Sin alumnos registrados.';
   const sel=document.getElementById('s-al'),cur=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
   sel.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${cur.has(a)?' selected':''}>${esc(a)}</option>`).join('');
@@ -326,17 +333,24 @@ function renderAl(){
     selOb.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${a===curOb?' selected':''}>${esc(a)}</option>`).join('');
   }
 }
-function ordenarAlfabetico(a){
-  return a.slice().sort((x,y)=>x.localeCompare(y,'es',{sensitivity:'base'}));
-}
 function addAl(){
   const inp=document.getElementById('al-inp'),n=inp.value.trim();
   if(!n)return;
   const al=gAl();
   if(al.includes(n)){alert('Ese alumno ya está en la lista.');return;}
-  al.push(n);
-  window.sAl(ordenarAlfabetico(al));inp.value='';renderAl();
+  al.push(n);window.sAl(al);
+  const rec=gRec();if(!rec[n]){rec[n]=[];sRec(rec);}
+  inp.value='';renderAl();
 }
+function editAl(i){
+  const al=gAl(), nuevo=prompt('Editar nombre del alumno o alumna:',al[i]||'');
+  if(nuevo===null)return; const n=nuevo.trim(); if(!n||n===al[i])return;
+  if(al.includes(n)){alert('Ese nombre ya existe.');return;}
+  const anterior=al[i]; al[i]=n; sAl(al);
+  const rec=gRec(); if(rec[anterior]&&!rec[n]){rec[n]=rec[anterior];delete rec[anterior];sRec(rec);}
+  renderAl();
+}
+
 function delAl(i){
   const al=gAl();
   if(!confirm(`¿Eliminar a "${al[i]}"?`))return;
@@ -344,54 +358,31 @@ function delAl(i){
 }
 
 // ─── FORM ───
-// Estado: por campo, array de filas [{cont, pdaIdx, niveles:{ [nombreAlumno]: nivel }}]
-// El contenido y el PDA se comparten entre los alumnos seleccionados,
-// pero el nivel de desempeño se guarda de forma individual por alumno.
+// Estado: por campo, array de filas [{cont, pdaIdx, nivel}]
 CK.forEach(k=>{estado[k]=[]});
 
 function buildForm(){
   const w=document.getElementById('campos-wrap');
   w.innerHTML='';
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}]; // empezar con 1 fila
+    estado[k]=[{cont:null,pdaIdx:null,nivel:null}]; // empezar con 1 fila
+    renderCampo(k);
   });
-  onEvAlumnoChange(); // dibuja recomendaciones y niveles según alumnos seleccionados
+  onEvAlumnoChange();
 }
 function getSelectedAlumnos(){
   const sel=document.getElementById('s-al');
   return sel ? Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean) : [];
 }
-function seleccionarTodosAl(){
-  const sel=document.getElementById('s-al');
-  if(!sel)return;
-  Array.from(sel.options).forEach(o=>{ if(o.value) o.selected=true; });
-  onEvAlumnoChange();
-}
-function deseleccionarTodosAl(){
-  const sel=document.getElementById('s-al');
-  if(!sel)return;
-  Array.from(sel.options).forEach(o=>{ o.selected=false; });
-  onEvAlumnoChange();
-}
 
 function onEvAlumnoChange(){
   const alumnos=getSelectedAlumnos();
+  const al=alumnos[0]||'';
   const wrap=document.getElementById('ev-rec-wrap');
-  if(wrap){
-    if(!alumnos.length){
-      wrap.innerHTML='';
-    }else{
-      wrap.innerHTML=alumnos.map((al,i)=>{
-        const header=alumnos.length>1
-          ? `<div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.8rem;color:#1B4F72;margin:${i>0?'14px':'0'} 0 6px">👤 ${esc(al)}</div>`
-          : '';
-        return header+recBoxHTML('ev-'+i,al);
-      }).join('');
-      alumnos.forEach((al,i)=>pintarRecList('ev-'+i,al));
-    }
-  }
-  // Redibuja los botones de Nivel de Desempeño: uno por alumno seleccionado
-  CK.forEach(k=>renderCampo(k));
+  if(!wrap)return;
+  if(!al){wrap.innerHTML='';return;}
+  wrap.innerHTML=recBoxHTML('ev',al);
+  pintarRecList('ev',al);
 }
 
 function renderCampo(k){
@@ -399,7 +390,6 @@ function renderCampo(k){
   const m=CMETA[k];
   const conts=D[k];
   const contOpts=conts.map((c,i)=>`<option value="${i}">${c.nombre}</option>`).join('');
-  const alumnos=getSelectedAlumnos();
 
   // Eliminar card existente si hay
   const old=document.getElementById(`card-${k}`);
@@ -410,40 +400,31 @@ function renderCampo(k){
   div.id=`card-${k}`;
 
   // Filas actuales
-  const filasHTML=estado[k].map((fila,fi)=>{
-    const nivelesHTML=alumnos.length
-      ? alumnos.map((al,ai)=>`
-        <div style="margin-top:${ai>0?'10px':'0'}">
-          ${alumnos.length>1?`<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:.72rem;color:#64748B;margin-bottom:4px">👤 ${esc(al)}</div>`:''}
-          <div class="nv-row">
-            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-1" onclick="setNivel('${k}',${fi},${ai},1)">1<small>Req. apoyo</small></button>
-            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-2" onclick="setNivel('${k}',${fi},${ai},2)">2<small>En proceso</small></button>
-            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-3" onclick="setNivel('${k}',${fi},${ai},3)">3<small>Esperado</small></button>
-          </div>
-          <div class="nv-result" id="nr-${k}-${fi}-${ai}"></div>
-        </div>`).join('')
-      : `<div style="color:#94A3B8;font-size:.8rem">Selecciona al menos un alumno para calificar.</div>`;
-    return `
+  const filasHTML=estado[k].map((fila,fi)=>`
     <div class="fila-eval" id="fila-${k}-${fi}" style="border:1.5px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;position:relative">
       ${estado[k].length>1?`<button onclick="delFila('${k}',${fi})" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#94A3B8;font-size:1rem;cursor:pointer;line-height:1" title="Eliminar">✕</button>`:''}
       <div style="margin-bottom:8px">
-        <div class="fl">Contenido</div>
+        <div class="fl">Contenido <button type="button" class="edit-mini" onclick="editContenido('${k}',${fi})">✎ editar</button></div>
         <select class="sc" id="c-${k}-${fi}" onchange="onCont('${k}',${fi})">
           <option value="">— Selecciona contenido —</option>${contOpts}
         </select>
       </div>
       <div style="margin-bottom:8px">
-        <div class="fl">Proceso de Desarrollo y Aprendizaje</div>
+        <div class="fl">Proceso de Desarrollo y Aprendizaje <button type="button" class="edit-mini" onclick="editPDA('${k}',${fi})">✎ editar</button></div>
         <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})">
           <option value="">— Selecciona primero el contenido —</option>
         </select>
       </div>
       <div>
         <div class="fl">Nivel de Desempeño</div>
-        ${nivelesHTML}
+        <div class="nv-row">
+          <button class="nv-btn" id="nb-${k}-${fi}-1" disabled onclick="setNivel('${k}',${fi},1)">1<small>Req. apoyo</small></button>
+          <button class="nv-btn" id="nb-${k}-${fi}-2" disabled onclick="setNivel('${k}',${fi},2)">2<small>En proceso</small></button>
+          <button class="nv-btn" id="nb-${k}-${fi}-3" disabled onclick="setNivel('${k}',${fi},3)">3<small>Esperado</small></button>
+        </div>
+        <div class="nv-result" id="nr-${k}-${fi}"></div>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 
   div.innerHTML=`
     <div class="cc-head" style="background:${m.color}">${m.emoji} ${m.label}</div>
@@ -453,7 +434,7 @@ function renderCampo(k){
     </div>`;
   w.appendChild(div);
 
-  // Restaurar selects y niveles si ya tenían valor
+  // Restaurar selects si ya tenían valor
   estado[k].forEach((fila,fi)=>{
     if(fila.cont!==null){
       const cSel=document.getElementById(`c-${k}-${fi}`);
@@ -461,21 +442,17 @@ function renderCampo(k){
       if(fila.pdaIdx!==null){
         const pSel=document.getElementById(`p-${k}-${fi}`);
         if(pSel) pSel.value=fila.pdaIdx;
+        actualizarBotonesNivel(k,fi);
       }
+      if(fila.nivel) setNivel(k,fi,fila.nivel,true);
     }
-    alumnos.forEach((al,ai)=>{
-      const n=fila.niveles&&fila.niveles[al];
-      if(n) setNivel(k,fi,ai,n,true);
-    });
   });
 }
 
 function addFila(k){
-  estado[k].push({cont:null,pdaIdx:null,niveles:{}});
+  estado[k].push({cont:null,pdaIdx:null,nivel:null});
   renderCampo(k);
-  // Scroll a la nueva fila
-  const card=document.getElementById(`card-${k}`);
-  if(card) card.scrollIntoView({behavior:'smooth',block:'end'});
+  // Conserva la posición actual; no mueve la pantalla al agregar contenido.
 }
 
 function delFila(k,fi){
@@ -483,20 +460,34 @@ function delFila(k,fi){
   renderCampo(k);
 }
 
+function editContenido(k,fi){
+  const idx=estado[k][fi].cont;
+  if(idx===null){alert('Primero selecciona un contenido.');return;}
+  const nuevo=prompt('Editar nombre del contenido:',D[k][idx].nombre);
+  if(nuevo===null||!nuevo.trim())return;
+  D[k][idx].nombre=nuevo.trim();guardarCatalogo();renderCampo(k);
+}
+function editPDA(k,fi){
+  const ci=estado[k][fi].cont,pi=estado[k][fi].pdaIdx;
+  if(ci===null||pi===null){alert('Primero selecciona contenido y PDA.');return;}
+  const nuevo=prompt('Editar texto del PDA:',D[k][ci].pdas[pi].texto);
+  if(nuevo===null||!nuevo.trim())return;
+  D[k][ci].pdas[pi].texto=nuevo.trim();guardarCatalogo();renderCampo(k);
+}
+
 function onCont(k,fi,restore=false){
   const idx=document.getElementById(`c-${k}-${fi}`)?.value;
   if(!restore){
     estado[k][fi].cont=idx===''?null:parseInt(idx);
     estado[k][fi].pdaIdx=null;
-    estado[k][fi].niveles={};
-    getSelectedAlumnos().forEach((al,ai)=>{
-      [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`); if(b)b.className='nv-btn'; });
-      const nr=document.getElementById(`nr-${k}-${fi}-${ai}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
-    });
+    estado[k][fi].nivel=null;
+          [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${n}`); if(b)b.className='nv-btn'; });
+    const nr=document.getElementById(`nr-${k}-${fi}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
+    actualizarBotonesNivel(k,fi);
   }
   const pSel=document.getElementById(`p-${k}-${fi}`);
   if(!pSel) return;
-  if(!idx||idx===''){pSel.innerHTML='<option value="">— Selecciona primero el contenido —</option>';return;}
+  if(!idx||idx===''){pSel.innerHTML='<option value="">— Selecciona primero el contenido —</option>';actualizarBotonesNivel(k,fi);return;}
   const np=GRADO_NP[gradoActual];
   const allPdas=D[k][parseInt(idx)].pdas;
   const pdas=allPdas.filter(p=>p.nivel_proceso===np);
@@ -505,27 +496,25 @@ function onCont(k,fi,restore=false){
     pdas.map(p=>{const origIdx=allPdas.indexOf(p);return`<option value="${origIdx}">${p.texto}</option>`;}).join('');
 }
 
+function actualizarBotonesNivel(k,fi){
+  const listo=estado[k][fi].cont!==null && estado[k][fi].pdaIdx!==null;
+  [1,2,3].forEach(n=>{const b=document.getElementById(`nb-${k}-${fi}-${n}`);if(b)b.disabled=!listo;});
+}
+
 function onPDA(k,fi){
   const pSel=document.getElementById(`p-${k}-${fi}`);
   if(!pSel) return;
   const pIdx=pSel.value;
   estado[k][fi].pdaIdx=pIdx===''?null:parseInt(pIdx);
-  // Refresca el texto de nivel de cada alumno que ya tuviera uno elegido
-  getSelectedAlumnos().forEach((al,ai)=>{
-    const n=estado[k][fi].niveles&&estado[k][fi].niveles[al];
-    if(n) setNivel(k,fi,ai,n);
-  });
+  actualizarBotonesNivel(k,fi);
+  if(estado[k][fi].nivel) setNivel(k,fi,estado[k][fi].nivel);
 }
 
-function setNivel(k,fi,ai,n,restore=false){
-  const alumnos=getSelectedAlumnos();
-  const al=alumnos[ai];
-  if(al===undefined) return;
-  if(!estado[k][fi].niveles) estado[k][fi].niveles={};
-  estado[k][fi].niveles[al]=n;
-
-  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${i}`); if(b)b.className='nv-btn'; });
-  const btn=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`);
+function setNivel(k,fi,n,restore=false){
+  if(estado[k][fi].cont===null || estado[k][fi].pdaIdx===null){alert('Primero selecciona el contenido y el PDA.');return;}
+  estado[k][fi].nivel=n;
+  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${i}`); if(b)b.className='nv-btn'; });
+  const btn=document.getElementById(`nb-${k}-${fi}-${n}`);
   if(btn)btn.className=`nv-btn s${n}`;
 
   let texto='';
@@ -539,13 +528,13 @@ function setNivel(k,fi,ai,n,restore=false){
 
   if(contIdx!==null && pdaIdx!==null){
     const pda=D[k][contIdx].pdas[pdaIdx];
-    if(pda) texto=pda[String(n)]||'';
+    if(pda) texto=pda[NIVEL_EXCEL[String(n)]||String(n)]||'';
   } else if(contIdx!==null){
     // Sin PDA seleccionado: mostrar texto genérico del nivel, no de un PDA específico
     texto='';
   }
 
-  const nr=document.getElementById(`nr-${k}-${fi}-${ai}`);
+  const nr=document.getElementById(`nr-${k}-${fi}`);
   if(!nr) return;
   if(!texto){
     const gen={1:'Requiere apoyo constante del docente para alcanzar los aprendizajes esperados.',
@@ -559,7 +548,7 @@ function setNivel(k,fi,ai,n,restore=false){
 
 function limpiar(){
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}];
+    estado[k]=[{cont:null,pdaIdx:null,nivel:null}];
     renderCampo(k);
   });
 }
@@ -568,23 +557,21 @@ function guardar(){
   const alumnos=getSelectedAlumnos();
   const mes=document.getElementById('s-mes').value;
   if(!alumnos.length){alert('Selecciona al menos un alumno antes de guardar.');return;}
-  const evs=gEv();
-  alumnos.forEach((al,ai)=>{
-    const campos={};
-    CK.forEach(k=>{
-      campos[k]=estado[k].map(fila=>{
-        const contIdx=fila.cont;
-        const pdaIdx=fila.pdaIdx;
-        const niv=fila.niveles?fila.niveles[al]:null;
-        const contNombre=contIdx!==null?D[k][contIdx].nombre:'';
-        const pdaTxt=contIdx!==null&&pdaIdx!==null?D[k][contIdx].pdas[pdaIdx].texto:'';
-        let nivelTxt='';
-        if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][String(niv)]||'';
-        return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
-      }).filter(f=>f.cont||f.pda||f.niv);
-    });
-    evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+Math.floor(Math.random()*100000)+ai,campos});
+  const campos={};
+  CK.forEach(k=>{
+    campos[k]=estado[k].map(fila=>{
+      const contIdx=fila.cont;
+      const pdaIdx=fila.pdaIdx;
+      const niv=fila.nivel;
+      const contNombre=contIdx!==null?D[k][contIdx].nombre:'';
+      const pdaTxt=contIdx!==null&&pdaIdx!==null?D[k][contIdx].pdas[pdaIdx].texto:'';
+      let nivelTxt='';
+      if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][NIVEL_EXCEL[String(niv)]||String(niv)]||'';
+      return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
+    }).filter(f=>f.cont||f.pda||f.niv);
   });
+  const evs=gEv();
+  alumnos.forEach(al=>evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+Math.floor(Math.random()*100000),campos:JSON.parse(JSON.stringify(campos))}));
   window.sEv(evs);
   alert(`✅ Evaluación guardada para ${alumnos.length} alumno${alumnos.length>1?'s':''}.`);
   limpiar();
@@ -706,7 +693,7 @@ function importarJSON(e){
       const nuevasEvs=datos.evaluaciones.filter(e=>!idsActuales.has(e.id));
       const idsObActuales=new Set(obActuales.map(o=>o.id));
       const nuevasObs=(datos.observaciones||[]).filter(o=>!idsObActuales.has(o.id));
-      const todosAl=ordenarAlfabetico([...new Set([...alActuales,...(datos.alumnos||[])])]);
+      const todosAl=[...new Set([...alActuales,...(datos.alumnos||[])])];
       window.sAl(todosAl);
       window.sEv([...evActuales,...nuevasEvs]);
       window.sObs([...obActuales,...nuevasObs]);
@@ -758,3 +745,6 @@ window.addEventListener('resize', updateStickyHeights);
 
 renderAl();
 buildForm();
+
+function irArriba(){window.scrollTo({top:0,behavior:'smooth'});}
+setTimeout(()=>{const b=document.getElementById('to-top');if(b)b.hidden=window.scrollY<300;window.addEventListener('scroll',()=>{if(b)b.hidden=window.scrollY<300},{passive:true});},0);
