@@ -325,13 +325,28 @@ function renderAl(){
   document.getElementById('al-list').innerHTML=al.map((a,i)=>
     `<li class="atag"><span>${esc(a)}</span><button aria-label="Editar a ${esc(a)}" onclick="editAl(${i})">✎</button><button aria-label="Eliminar a ${esc(a)}" onclick="delAl(${i})">✕</button></li>`).join('');
   document.getElementById('al-cnt').textContent=al.length?`${al.length} alumno${al.length>1?'s':''} registrado${al.length>1?'s':''}.`:'Sin alumnos registrados.';
-  const sel=document.getElementById('s-al'),cur=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
-  sel.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${cur.has(a)?' selected':''}>${esc(a)}</option>`).join('');
+  const sel=document.getElementById('s-al');
+  if(sel){
+    const cur=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
+    sel.innerHTML=al.map(a=>`<option value="${esc(a)}"${cur.has(a)?' selected':''}>${esc(a)}</option>`).join('');
+  }
   const selOb=document.getElementById('ob-al');
   if(selOb){
     const curOb=selOb.value;
     selOb.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${a===curOb?' selected':''}>${esc(a)}</option>`).join('');
   }
+}
+function seleccionarTodos(){
+  const sel=document.getElementById('s-al');
+  if(!sel)return;
+  Array.from(sel.options).forEach(o=>o.selected=true);
+  onEvAlumnoChange();
+}
+function limpiarSeleccionAlumnos(){
+  const sel=document.getElementById('s-al');
+  if(!sel)return;
+  Array.from(sel.options).forEach(o=>o.selected=false);
+  onEvAlumnoChange();
 }
 function addAl(){
   const inp=document.getElementById('al-inp'),n=inp.value.trim();

@@ -56,7 +56,7 @@
   <div class="card">
     <h2>📋 Nueva Evaluación</h2>
     <div class="eg">
-      <div class="fg"><label>Alumnos <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--verde)">(puedes elegir varios)</span></label><select id="s-al" multiple size="5" onchange="onEvAlumnoChange()"><option value="">— Selecciona —</option></select></div>
+      <div class="fg"><label>Alumnos <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--verde)">(puedes elegir varios)</span></label><div class="student-select-actions"><button type="button" class="mini-action" onclick="seleccionarTodos()">☑ Seleccionar todos</button><button type="button" class="mini-action secondary" onclick="limpiarSeleccionAlumnos()">Limpiar</button></div><select id="s-al" multiple size="6" onchange="onEvAlumnoChange()"></select></div>
       <div class="fg"><label>Mes</label><select id="s-mes">
         <option>Septiembre</option><option>Octubre</option><option>Noviembre</option>
         <option>Diciembre</option><option>Enero</option><option>Febrero</option>
