@@ -14,7 +14,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-setTimeout(()=>{const bar=document.getElementById('fb-bar');if(bar && bar.textContent.includes('Cargando')) bar.innerHTML='<span style="color:rgba(255,255,255,.8);font-size:.78rem">💾 Modo local activo · tus datos se guardan en este dispositivo</span>';},4000);
 let analytics = null;
 try { analytics = getAnalytics(app); } catch (e) { console.warn('Analytics no disponible; la app continuará funcionando.', e); }
 const auth = getAuth(app);

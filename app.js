@@ -9,30 +9,44 @@ const NL={'1':'Requiere apoyo','2':'En proceso','3':'Esperado'};
 const NB={'1':'b1','2':'b2','3':'b3'};
 const NR={'1':'r1','2':'r2','3':'r3'};
 const NE={'1':'🔴','2':'🟡','3':'🟢'};
-// El Excel trae cuatro descriptores; la app usa tres categorías docentes.
-// Se conserva el catálogo completo, pero el texto mostrado se adapta a estas categorías.
-const NIVEL_EXCEL={'1':'4','2':'3','3':'1'};
-function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-try{
-  const personalizado=JSON.parse(localStorage.getItem('d_catalogo')||'{}');
-  CK.forEach(k=>{if(personalizado[k]) D[k]=personalizado[k];});
-}catch(e){console.warn('No se pudo cargar el catálogo personalizado',e)}
-function guardarCatalogo(){try{localStorage.setItem('d_catalogo',JSON.stringify(D));}catch(e){console.warn('No se pudo guardar el catálogo',e)}}
+// Evita que nombres y textos guardados se interpreten como HTML.
+function esc(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
 
 // Estado por campo
 const estado={};
-CK.forEach(k=>{estado[k]={cont:null,pdaIdx:null,nivel:null}});
+CK.forEach(k=>{estado[k]={cont:null,pdaIdx:null,niveles:{}}});
 
 function gAl(){try{return JSON.parse(localStorage.getItem('d_al')||'[]')}catch(e){return[]}}
-function safeStore(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.warn('No se pudo guardar localmente',e);return false}}
-function sAl(a){safeStore('d_al',a)}
+function sAl(a){localStorage.setItem('d_al',JSON.stringify(a))}
+
+// ─── OVERRIDES: permite editar el texto mostrado de un contenido o PDA sin tocar el catálogo original ───
+function gOv(){try{return JSON.parse(localStorage.getItem('d_ov')||'{}')}catch(e){return{}}}
+function sOv(o){localStorage.setItem('d_ov',JSON.stringify(o)); if(typeof window.sOv2==='function') window.sOv2(o);}
+function dNombre(k,idx){ const ov=gOv(); return ov[`${k}#c${idx}`] ?? D[k][idx].nombre; }
+function dPdaTexto(k,idx,pidx){ const ov=gOv(); return ov[`${k}#p${idx}#${pidx}`] ?? D[k][idx].pdas[pidx].texto; }
+function editarContenido(k,idx){
+  const actual=dNombre(k,idx);
+  const nuevo=prompt('Editar texto del contenido (solo cambia cómo se ve aquí, no afecta el plan oficial):',actual);
+  if(nuevo===null || nuevo.trim()==='' || nuevo===actual) return;
+  const ov=gOv(); ov[`${k}#c${idx}`]=nuevo.trim(); sOv(ov);
+  CK.forEach(kk=>renderCampo(kk));
+}
+function editarPda(k,idx,pidx){
+  const actual=dPdaTexto(k,idx,pidx);
+  const nuevo=prompt('Editar texto del PDA (solo cambia cómo se ve aquí, no afecta el plan oficial):',actual);
+  if(nuevo===null || nuevo.trim()==='' || nuevo===actual) return;
+  const ov=gOv(); ov[`${k}#p${idx}#${pidx}`]=nuevo.trim(); sOv(ov);
+  CK.forEach(kk=>renderCampo(kk));
+}
 function gEv(){try{return JSON.parse(localStorage.getItem('d_ev')||'[]')}catch(e){return[]}}
-function sEv(a){safeStore('d_ev',a)}
+function sEv(a){localStorage.setItem('d_ev',JSON.stringify(a))}
 function gObs(){try{return JSON.parse(localStorage.getItem('d_ob')||'[]')}catch(e){return[]}}
-function sObs(a){safeStore('d_ob',a)}
+function sObs(a){localStorage.setItem('d_ob',JSON.stringify(a))}
 function gRec(){try{const r=JSON.parse(localStorage.getItem('d_rec')||'{}');Object.keys(r).forEach(k=>{if(typeof r[k]==='string'){r[k]=r[k]?r[k].split('\n').map(s=>s.replace(/^•\s*/,'').trim()).filter(Boolean):[];}});return r;}catch(e){return{}}}
-function sRec(o){safeStore('d_rec',o)}
+function sRec(o){localStorage.setItem('d_rec',JSON.stringify(o))}
 function recListStaticHTML(al){
   const arr=(gRec()[al]||[]);
   if(!arr.length)return'';
@@ -155,7 +169,7 @@ const AS_ALUMNOS_DEFAULT=[
 const AS_TOTALES_DEFAULT={sep:19,oct:21,nov:17,dic:15,ene:14,feb:11,mzo:17,abr:14,may:15,jun:null,jul:null};
 
 function gAs(){try{return JSON.parse(localStorage.getItem('d_as')||'null')}catch(e){return null}}
-function sAs(d){safeStore('d_as',d)}
+function sAs(d){localStorage.setItem('d_as',JSON.stringify(d))}
 window.sAl=sAl; window.sEv=sEv; window.sAs=sAs; window.sObs=sObs;
 
 function buildAsistencia(){
@@ -321,55 +335,74 @@ function exportarAsistencia(){
 
 // ─── ALUMNOS ───
 function renderAl(){
-  const al=gAl();
-  document.getElementById('al-list').innerHTML=al.map((a,i)=>
-    `<li class="atag"><span>${esc(a)}</span><button aria-label="Editar a ${esc(a)}" onclick="editAl(${i})">✎</button><button aria-label="Eliminar a ${esc(a)}" onclick="delAl(${i})">✕</button></li>`).join('');
-  document.getElementById('al-cnt').textContent=al.length?`${al.length} alumno${al.length>1?'s':''} registrado${al.length>1?'s':''}.`:'Sin alumnos registrados.';
-  const sel=document.getElementById('s-al');
-  if(sel){
-    const cur=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
-    sel.innerHTML=al.map(a=>`<option value="${esc(a)}"${cur.has(a)?' selected':''}>${esc(a)}</option>`).join('');
+  let al=gAl();
+  const ordenado=ordenAlfabetico(al);
+  if(JSON.stringify(ordenado)!==JSON.stringify(al)){
+    al=ordenado;
+    window.sAl(al); // normaliza el orden guardado para que quede igual siempre
   }
+  document.getElementById('al-list').innerHTML=al.map((a,i)=>
+    `<li class="atag">${esc(a)} <button aria-label="Editar a ${esc(a)}" onclick="editarAl(${i})" style="margin-left:2px">✏️</button><button aria-label="Eliminar a ${esc(a)}" onclick="delAl(${i})">✕</button></li>`).join('');
+  document.getElementById('al-cnt').textContent=al.length?`${al.length} alumno${al.length>1?'s':''} registrado${al.length>1?'s':''}.`:'Sin alumnos registrados.';
+  const sel=document.getElementById('s-al'),cur=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
+  sel.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${cur.has(a)?' selected':''}>${esc(a)}</option>`).join('');
   const selOb=document.getElementById('ob-al');
   if(selOb){
     const curOb=selOb.value;
     selOb.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${a===curOb?' selected':''}>${esc(a)}</option>`).join('');
   }
 }
-function seleccionarTodos(){
-  const sel=document.getElementById('s-al');
-  if(!sel)return;
-  Array.from(sel.options).forEach(o=>o.selected=true);
-  onEvAlumnoChange();
-}
-function limpiarSeleccionAlumnos(){
-  const sel=document.getElementById('s-al');
-  if(!sel)return;
-  Array.from(sel.options).forEach(o=>o.selected=false);
-  onEvAlumnoChange();
+function ordenAlfabetico(al){
+  return [...al].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
 }
 function addAl(){
   const inp=document.getElementById('al-inp'),n=inp.value.trim();
   if(!n)return;
   const al=gAl();
   if(al.includes(n)){alert('Ese alumno ya está en la lista.');return;}
-  al.push(n);window.sAl(al);
-  const rec=gRec();if(!rec[n]){rec[n]=[];sRec(rec);}
-  inp.value='';renderAl();
+  al.push(n);window.sAl(ordenAlfabetico(al));inp.value='';renderAl();
 }
-function editAl(i){
-  const al=gAl(), nuevo=prompt('Editar nombre del alumno o alumna:',al[i]||'');
-  if(nuevo===null)return; const n=nuevo.trim(); if(!n||n===al[i])return;
-  if(al.includes(n)){alert('Ese nombre ya existe.');return;}
-  const anterior=al[i]; al[i]=n; sAl(al);
-  const rec=gRec(); if(rec[anterior]&&!rec[n]){rec[n]=rec[anterior];delete rec[anterior];sRec(rec);}
-  renderAl();
-}
-
 function delAl(i){
   const al=gAl();
   if(!confirm(`¿Eliminar a "${al[i]}"?`))return;
   al.splice(i,1);window.sAl(al);renderAl();
+}
+function editarAl(i){
+  const al=gAl();
+  const anterior=al[i];
+  const nuevo=(prompt('Editar nombre del alumno:',anterior)||'').trim();
+  if(!nuevo || nuevo===anterior) return;
+  if(al.includes(nuevo)){alert('Ya existe un alumno con ese nombre.');return;}
+
+  al[i]=nuevo;
+  window.sAl(ordenAlfabetico(al));
+
+  // Actualiza el nombre también en evaluaciones, observaciones, asistencia y recomendaciones
+  const evs=gEv(); let cambioEv=false;
+  evs.forEach(e=>{ if(e.al===anterior){ e.al=nuevo; cambioEv=true; } });
+  if(cambioEv) window.sEv(evs);
+
+  const obs=gObs(); let cambioObs=false;
+  obs.forEach(o=>{ if(o.al===anterior){ o.al=nuevo; cambioObs=true; } });
+  if(cambioObs) window.sObs(obs);
+
+  const as=gAs();
+  if(as && Array.isArray(as.alumnos)){
+    const reg=as.alumnos.find(a=>a.nombre===anterior);
+    if(reg){ reg.nombre=nuevo; window.sAs(as); }
+  }
+
+  const rec=gRec();
+  if(rec[anterior]){
+    rec[nuevo]=[...(rec[nuevo]||[]),...rec[anterior]];
+    delete rec[anterior];
+    sRec(rec);
+  }
+
+  renderAl();
+  if(typeof buildRS==='function' && document.getElementById('tab-rs')?.classList.contains('active')) buildRS();
+  if(typeof buildAsistencia==='function' && document.getElementById('tab-as')?.classList.contains('active')) buildAsistencia();
+  if(typeof buildOb==='function' && document.getElementById('tab-ob')?.classList.contains('active')) buildOb();
 }
 
 // ─── FORM ───
@@ -380,7 +413,7 @@ function buildForm(){
   const w=document.getElementById('campos-wrap');
   w.innerHTML='';
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,nivel:null}]; // empezar con 1 fila
+    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}]; // empezar con 1 fila
     renderCampo(k);
   });
   onEvAlumnoChange();
@@ -389,22 +422,45 @@ function getSelectedAlumnos(){
   const sel=document.getElementById('s-al');
   return sel ? Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean) : [];
 }
+function seleccionarTodosAl(){
+  const sel=document.getElementById('s-al');
+  if(!sel)return;
+  Array.from(sel.options).forEach(o=>{if(o.value)o.selected=true;});
+  onEvAlumnoChange();
+}
+function deseleccionarTodosAl(){
+  const sel=document.getElementById('s-al');
+  if(!sel)return;
+  Array.from(sel.options).forEach(o=>{o.selected=false;});
+  onEvAlumnoChange();
+}
 
 function onEvAlumnoChange(){
   const alumnos=getSelectedAlumnos();
-  const al=alumnos[0]||'';
   const wrap=document.getElementById('ev-rec-wrap');
-  if(!wrap)return;
-  if(!al){wrap.innerHTML='';return;}
-  wrap.innerHTML=recBoxHTML('ev',al);
-  pintarRecList('ev',al);
+  if(wrap){
+    if(!alumnos.length){wrap.innerHTML='';}
+    else{
+      wrap.innerHTML=`<h3 style="margin:10px 0 8px;font-family:Nunito,sans-serif;font-weight:800;color:var(--tx1)">💡 Recomendaciones por alumno</h3>`+
+        alumnos.map((al,ai)=>`
+        <div style="margin-bottom:12px">
+          <div class="fl" style="margin-bottom:4px">👤 ${esc(al)}</div>
+          ${recBoxHTML('ev-'+ai,al)}
+        </div>`).join('');
+      alumnos.forEach((al,ai)=>pintarRecList('ev-'+ai,al));
+    }
+  }
+  // El número de alumnos pudo cambiar: hay que volver a pintar el bloque de
+  // Nivel de Desempeño (uno por alumno), conservando Contenido y PDA ya elegidos.
+  CK.forEach(k=>renderCampo(k));
 }
 
 function renderCampo(k){
   const w=document.getElementById('campos-wrap');
   const m=CMETA[k];
   const conts=D[k];
-  const contOpts=conts.map((c,i)=>`<option value="${i}">${c.nombre}</option>`).join('');
+  const contOpts=conts.map((c,i)=>`<option value="${i}">${esc(dNombre(k,i))}</option>`).join('');
+  const alumnosSel=getSelectedAlumnos();
 
   // Eliminar card existente si hay
   const old=document.getElementById(`card-${k}`);
@@ -415,31 +471,48 @@ function renderCampo(k){
   div.id=`card-${k}`;
 
   // Filas actuales
-  const filasHTML=estado[k].map((fila,fi)=>`
+  const filasHTML=estado[k].map((fila,fi)=>{
+    const listo = fila.cont!==null && fila.pdaIdx!==null;
+    const nivelBloque = alumnosSel.length
+      ? alumnosSel.map((al,ai)=>`
+        <div style="margin-top:${ai>0?'10px':'6px'};padding-top:${ai>0?'10px':'0'};border-top:${ai>0?'1px dashed var(--bd)':'none'}">
+          <div class="fl">👤 ${esc(al)}</div>
+          <div class="nv-row">
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-1" ${listo?'':'disabled'} style="${listo?'':'opacity:.4;cursor:not-allowed'}" onclick="setNivel('${k}',${fi},${ai},1)">1<small>Req. apoyo</small></button>
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-2" ${listo?'':'disabled'} style="${listo?'':'opacity:.4;cursor:not-allowed'}" onclick="setNivel('${k}',${fi},${ai},2)">2<small>En proceso</small></button>
+            <button class="nv-btn" id="nb-${k}-${fi}-${ai}-3" ${listo?'':'disabled'} style="${listo?'':'opacity:.4;cursor:not-allowed'}" onclick="setNivel('${k}',${fi},${ai},3)">3<small>Esperado</small></button>
+          </div>
+          <div class="nv-result" id="nr-${k}-${fi}-${ai}"></div>
+        </div>`).join('')
+      : `<div style="margin-top:6px;color:#94A3B8;font-size:.82rem;font-family:Nunito,sans-serif">Selecciona al menos un alumno arriba para poder calificar el nivel.</div>`;
+    return `
     <div class="fila-eval" id="fila-${k}-${fi}" style="border:1.5px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;position:relative">
       ${estado[k].length>1?`<button onclick="delFila('${k}',${fi})" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#94A3B8;font-size:1rem;cursor:pointer;line-height:1" title="Eliminar">✕</button>`:''}
       <div style="margin-bottom:8px">
-        <div class="fl">Contenido <button type="button" class="edit-mini" onclick="editContenido('${k}',${fi})">✎ editar</button></div>
-        <select class="sc" id="c-${k}-${fi}" onchange="onCont('${k}',${fi})">
-          <option value="">— Selecciona contenido —</option>${contOpts}
-        </select>
+        <div class="fl">Contenido <span style="font-weight:600;text-transform:none;letter-spacing:0;color:#94A3B8">(igual para todos)</span></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="sc" id="c-${k}-${fi}" onchange="onCont('${k}',${fi})" style="flex:1">
+            <option value="">— Selecciona contenido —</option>${contOpts}
+          </select>
+          <button type="button" title="Editar texto de este contenido" onclick="if(estado['${k}'][${fi}].cont!==null)editarContenido('${k}',estado['${k}'][${fi}].cont);else alert('Primero selecciona un contenido.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
+        </div>
       </div>
       <div style="margin-bottom:8px">
-        <div class="fl">Proceso de Desarrollo y Aprendizaje <button type="button" class="edit-mini" onclick="editPDA('${k}',${fi})">✎ editar</button></div>
-        <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})">
-          <option value="">— Selecciona primero el contenido —</option>
-        </select>
+        <div class="fl">Proceso de Desarrollo y Aprendizaje <span style="font-weight:600;text-transform:none;letter-spacing:0;color:#94A3B8">(igual para todos)</span></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})" style="flex:1">
+            <option value="">— Selecciona primero el contenido —</option>
+          </select>
+          <button type="button" title="Editar texto de este PDA" onclick="if(estado['${k}'][${fi}].pdaIdx!==null)editarPda('${k}',estado['${k}'][${fi}].cont,estado['${k}'][${fi}].pdaIdx);else alert('Primero selecciona un PDA.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
+        </div>
       </div>
       <div>
-        <div class="fl">Nivel de Desempeño</div>
-        <div class="nv-row">
-          <button class="nv-btn" id="nb-${k}-${fi}-1" disabled onclick="setNivel('${k}',${fi},1)">1<small>Req. apoyo</small></button>
-          <button class="nv-btn" id="nb-${k}-${fi}-2" disabled onclick="setNivel('${k}',${fi},2)">2<small>En proceso</small></button>
-          <button class="nv-btn" id="nb-${k}-${fi}-3" disabled onclick="setNivel('${k}',${fi},3)">3<small>Esperado</small></button>
-        </div>
-        <div class="nv-result" id="nr-${k}-${fi}"></div>
+        <div class="fl">Nivel de Desempeño <span style="font-weight:600;text-transform:none;letter-spacing:0;color:#94A3B8">(uno por alumno)</span></div>
+        ${listo?'':`<div id="aviso-${k}-${fi}" style="color:#94A3B8;font-size:.78rem;font-family:Nunito,sans-serif;margin-bottom:4px">Selecciona contenido y PDA para poder calificar.</div>`}
+        ${nivelBloque}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   div.innerHTML=`
     <div class="cc-head" style="background:${m.color}">${m.emoji} ${m.label}</div>
@@ -457,17 +530,22 @@ function renderCampo(k){
       if(fila.pdaIdx!==null){
         const pSel=document.getElementById(`p-${k}-${fi}`);
         if(pSel) pSel.value=fila.pdaIdx;
-        actualizarBotonesNivel(k,fi);
       }
-      if(fila.nivel) setNivel(k,fi,fila.nivel,true);
+    }
+    actualizarBloqueoNivel(k,fi);
+    // Restaurar el nivel de cada alumno ya calificado en esta fila
+    if(fila.niveles){
+      alumnosSel.forEach((al,ai)=>{
+        const n=fila.niveles[al];
+        if(n) pintarNivel(k,fi,ai,al,n);
+      });
     }
   });
 }
 
 function addFila(k){
-  estado[k].push({cont:null,pdaIdx:null,nivel:null});
+  estado[k].push({cont:null,pdaIdx:null,niveles:{}});
   renderCampo(k);
-  // Conserva la posición actual; no mueve la pantalla al agregar contenido.
 }
 
 function delFila(k,fi){
@@ -475,19 +553,20 @@ function delFila(k,fi){
   renderCampo(k);
 }
 
-function editContenido(k,fi){
-  const idx=estado[k][fi].cont;
-  if(idx===null){alert('Primero selecciona un contenido.');return;}
-  const nuevo=prompt('Editar nombre del contenido:',D[k][idx].nombre);
-  if(nuevo===null||!nuevo.trim())return;
-  D[k][idx].nombre=nuevo.trim();guardarCatalogo();renderCampo(k);
-}
-function editPDA(k,fi){
-  const ci=estado[k][fi].cont,pi=estado[k][fi].pdaIdx;
-  if(ci===null||pi===null){alert('Primero selecciona contenido y PDA.');return;}
-  const nuevo=prompt('Editar texto del PDA:',D[k][ci].pdas[pi].texto);
-  if(nuevo===null||!nuevo.trim())return;
-  D[k][ci].pdas[pi].texto=nuevo.trim();guardarCatalogo();renderCampo(k);
+// Habilita o bloquea los botones de nivel de una fila según si ya tiene contenido+PDA
+function actualizarBloqueoNivel(k,fi){
+  const listo = estado[k][fi].cont!==null && estado[k][fi].pdaIdx!==null;
+  getSelectedAlumnos().forEach((al,ai)=>{
+    [1,2,3].forEach(n=>{
+      const b=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`);
+      if(!b)return;
+      b.disabled=!listo;
+      b.style.opacity=listo?'':'.4';
+      b.style.cursor=listo?'':'not-allowed';
+    });
+  });
+  const aviso=document.getElementById(`aviso-${k}-${fi}`);
+  if(aviso) aviso.style.display=listo?'none':'';
 }
 
 function onCont(k,fi,restore=false){
@@ -495,25 +574,23 @@ function onCont(k,fi,restore=false){
   if(!restore){
     estado[k][fi].cont=idx===''?null:parseInt(idx);
     estado[k][fi].pdaIdx=null;
-    estado[k][fi].nivel=null;
-          [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${n}`); if(b)b.className='nv-btn'; });
-    const nr=document.getElementById(`nr-${k}-${fi}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
-    actualizarBotonesNivel(k,fi);
+    estado[k][fi].niveles={};
+    getSelectedAlumnos().forEach((al,ai)=>{
+      const b1=document.getElementById(`nb-${k}-${fi}-${ai}-1`);
+      [1,2,3].forEach(n=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`); if(b)b.className='nv-btn'; });
+      const nr=document.getElementById(`nr-${k}-${fi}-${ai}`); if(nr){nr.className='nv-result';nr.innerHTML='';}
+    });
+    actualizarBloqueoNivel(k,fi);
   }
   const pSel=document.getElementById(`p-${k}-${fi}`);
   if(!pSel) return;
-  if(!idx||idx===''){pSel.innerHTML='<option value="">— Selecciona primero el contenido —</option>';actualizarBotonesNivel(k,fi);return;}
+  if(!idx||idx===''){pSel.innerHTML='<option value="">— Selecciona primero el contenido —</option>';return;}
   const np=GRADO_NP[gradoActual];
   const allPdas=D[k][parseInt(idx)].pdas;
   const pdas=allPdas.filter(p=>p.nivel_proceso===np);
   if(pdas.length===0){pSel.innerHTML='<option value="">— Sin PDAs para este grado —</option>';return;}
   pSel.innerHTML='<option value="">— Selecciona PDA —</option>'+
-    pdas.map(p=>{const origIdx=allPdas.indexOf(p);return`<option value="${origIdx}">${p.texto}</option>`;}).join('');
-}
-
-function actualizarBotonesNivel(k,fi){
-  const listo=estado[k][fi].cont!==null && estado[k][fi].pdaIdx!==null;
-  [1,2,3].forEach(n=>{const b=document.getElementById(`nb-${k}-${fi}-${n}`);if(b)b.disabled=!listo;});
+    pdas.map(p=>{const origIdx=allPdas.indexOf(p);return`<option value="${origIdx}">${esc(dPdaTexto(k,parseInt(idx),origIdx))}</option>`;}).join('');
 }
 
 function onPDA(k,fi){
@@ -521,20 +598,55 @@ function onPDA(k,fi){
   if(!pSel) return;
   const pIdx=pSel.value;
   estado[k][fi].pdaIdx=pIdx===''?null:parseInt(pIdx);
-  actualizarBotonesNivel(k,fi);
-  if(estado[k][fi].nivel) setNivel(k,fi,estado[k][fi].nivel);
+  actualizarBloqueoNivel(k,fi);
+  // Volver a pintar los niveles ya elegidos (el texto del PDA pudo cambiar)
+  const alumnosSel=getSelectedAlumnos();
+  const niveles=estado[k][fi].niveles||{};
+  alumnosSel.forEach((al,ai)=>{
+    const n=niveles[al];
+    if(n) pintarNivel(k,fi,ai,al,n);
+  });
 }
 
-function setNivel(k,fi,n,restore=false){
-  if(estado[k][fi].cont===null || estado[k][fi].pdaIdx===null){alert('Primero selecciona el contenido y el PDA.');return;}
-  estado[k][fi].nivel=n;
-  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${i}`); if(b)b.className='nv-btn'; });
-  const btn=document.getElementById(`nb-${k}-${fi}-${n}`);
+// Guarda el nivel elegido para UN alumno específico (ai = su posición en la lista de seleccionados)
+function setNivel(k,fi,ai,n){
+  const al=getSelectedAlumnos()[ai];
+  if(!al)return;
+  if(!estado[k][fi].niveles) estado[k][fi].niveles={};
+  estado[k][fi].niveles[al]=n;
+  pintarNivel(k,fi,ai,al,n);
+  // Si el nivel indica que el alumno necesita reforzar (1 o 2), se agregan
+  // automáticamente las recomendaciones sugeridas para ese contenido.
+  if((n===1||n===2) && estado[k][fi].cont!==null){
+    autoAgregarRecomendacion(k,estado[k][fi].cont,al,ai);
+  }
+}
+
+function autoAgregarRecomendacion(k,contIdx,al,ai){
+  const norm=s=>(s||'').trim().toLowerCase().replace(/[.\s]+$/,'');
+  const nombreCont=norm(D[k][contIdx].nombre);
+  const grupo=(RECS_ALL[k]||[]).find(g=>norm(g.contenido)===nombreCont);
+  if(!grupo || !grupo.items || !grupo.items.length) return;
+  const r=gRec();
+  if(!r[al]) r[al]=[];
+  let agregoAlgo=false;
+  grupo.items.forEach(texto=>{
+    if(!r[al].includes(texto)){ r[al].push(texto); agregoAlgo=true; }
+  });
+  if(agregoAlgo){
+    sRec(r);
+    pintarRecList('ev-'+ai,al);
+  }
+}
+
+// Solo actualiza la interfaz (botón resaltado + texto de la observación) sin tocar el estado
+function pintarNivel(k,fi,ai,al,n){
+  [1,2,3].forEach(i=>{ const b=document.getElementById(`nb-${k}-${fi}-${ai}-${i}`); if(b)b.className='nv-btn'; });
+  const btn=document.getElementById(`nb-${k}-${fi}-${ai}-${n}`);
   if(btn)btn.className=`nv-btn s${n}`;
 
   let texto='';
   const contIdx=estado[k][fi].cont;
-  // Leer pdaIdx del estado o del select (por si no se actualizó)
   let pdaIdx=estado[k][fi].pdaIdx;
   if(pdaIdx===null){
     const pSel=document.getElementById(`p-${k}-${fi}`);
@@ -543,13 +655,10 @@ function setNivel(k,fi,n,restore=false){
 
   if(contIdx!==null && pdaIdx!==null){
     const pda=D[k][contIdx].pdas[pdaIdx];
-    if(pda) texto=pda[NIVEL_EXCEL[String(n)]||String(n)]||'';
-  } else if(contIdx!==null){
-    // Sin PDA seleccionado: mostrar texto genérico del nivel, no de un PDA específico
-    texto='';
+    if(pda) texto=pda[String(n)]||'';
   }
 
-  const nr=document.getElementById(`nr-${k}-${fi}`);
+  const nr=document.getElementById(`nr-${k}-${fi}-${ai}`);
   if(!nr) return;
   if(!texto){
     const gen={1:'Requiere apoyo constante del docente para alcanzar los aprendizajes esperados.',
@@ -563,7 +672,7 @@ function setNivel(k,fi,n,restore=false){
 
 function limpiar(){
   CK.forEach(k=>{
-    estado[k]=[{cont:null,pdaIdx:null,nivel:null}];
+    estado[k]=[{cont:null,pdaIdx:null,niveles:{}}];
     renderCampo(k);
   });
 }
@@ -572,21 +681,23 @@ function guardar(){
   const alumnos=getSelectedAlumnos();
   const mes=document.getElementById('s-mes').value;
   if(!alumnos.length){alert('Selecciona al menos un alumno antes de guardar.');return;}
-  const campos={};
-  CK.forEach(k=>{
-    campos[k]=estado[k].map(fila=>{
-      const contIdx=fila.cont;
-      const pdaIdx=fila.pdaIdx;
-      const niv=fila.nivel;
-      const contNombre=contIdx!==null?D[k][contIdx].nombre:'';
-      const pdaTxt=contIdx!==null&&pdaIdx!==null?D[k][contIdx].pdas[pdaIdx].texto:'';
-      let nivelTxt='';
-      if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][NIVEL_EXCEL[String(niv)]||String(niv)]||'';
-      return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
-    }).filter(f=>f.cont||f.pda||f.niv);
-  });
   const evs=gEv();
-  alumnos.forEach(al=>evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+Math.floor(Math.random()*100000),campos:JSON.parse(JSON.stringify(campos))}));
+  alumnos.forEach((al,ai)=>{
+    const campos={};
+    CK.forEach(k=>{
+      campos[k]=estado[k].map(fila=>{
+        const contIdx=fila.cont;
+        const pdaIdx=fila.pdaIdx;
+        const niv=(fila.niveles||{})[al]||null;
+        const contNombre=contIdx!==null?dNombre(k,contIdx):'';
+        const pdaTxt=contIdx!==null&&pdaIdx!==null?dPdaTexto(k,contIdx,pdaIdx):'';
+        let nivelTxt='';
+        if(contIdx!==null&&pdaIdx!==null&&niv) nivelTxt=D[k][contIdx].pdas[pdaIdx][String(niv)]||'';
+        return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
+      }).filter(f=>f.cont||f.pda||f.niv);
+    });
+    evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+ai+Math.floor(Math.random()*100000),campos});
+  });
   window.sEv(evs);
   alert(`✅ Evaluación guardada para ${alumnos.length} alumno${alumnos.length>1?'s':''}.`);
   limpiar();
@@ -708,7 +819,7 @@ function importarJSON(e){
       const nuevasEvs=datos.evaluaciones.filter(e=>!idsActuales.has(e.id));
       const idsObActuales=new Set(obActuales.map(o=>o.id));
       const nuevasObs=(datos.observaciones||[]).filter(o=>!idsObActuales.has(o.id));
-      const todosAl=[...new Set([...alActuales,...(datos.alumnos||[])])];
+      const todosAl=ordenAlfabetico([...new Set([...alActuales,...(datos.alumnos||[])])]);
       window.sAl(todosAl);
       window.sEv([...evActuales,...nuevasEvs]);
       window.sObs([...obActuales,...nuevasObs]);
@@ -761,5 +872,11 @@ window.addEventListener('resize', updateStickyHeights);
 renderAl();
 buildForm();
 
-function irArriba(){window.scrollTo({top:0,behavior:'smooth'});}
-setTimeout(()=>{const b=document.getElementById('to-top');if(b)b.hidden=window.scrollY<300;window.addEventListener('scroll',()=>{if(b)b.hidden=window.scrollY<300},{passive:true});},0);
+// Botón flotante para subir arriba
+window.addEventListener('scroll', ()=>{
+  const btn=document.getElementById('btn-arriba');
+  if(!btn)return;
+  btn.style.display = window.scrollY>300 ? 'flex' : 'none';
+  btn.style.alignItems='center';
+  btn.style.justifyContent='center';
+});

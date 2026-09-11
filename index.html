@@ -56,7 +56,13 @@
   <div class="card">
     <h2>📋 Nueva Evaluación</h2>
     <div class="eg">
-      <div class="fg"><label>Alumnos <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--verde)">(puedes elegir varios)</span></label><div class="student-select-actions"><button type="button" class="mini-action" onclick="seleccionarTodos()">☑ Seleccionar todos</button><button type="button" class="mini-action secondary" onclick="limpiarSeleccionAlumnos()">Limpiar</button></div><select id="s-al" multiple size="6" onchange="onEvAlumnoChange()"></select></div>
+      <div class="fg"><label>Alumnos <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--verde)">(puedes elegir varios)</span></label>
+        <select id="s-al" multiple size="5" onchange="onEvAlumnoChange()"><option value="">— Selecciona —</option></select>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button type="button" onclick="seleccionarTodosAl()" style="flex:1;padding:6px;border:2px solid var(--verde);border-radius:8px;background:none;color:var(--verde);font-family:Nunito,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">✅ Seleccionar todos</button>
+          <button type="button" onclick="deseleccionarTodosAl()" style="flex:1;padding:6px;border:2px solid #cbd5e1;border-radius:8px;background:none;color:#64748b;font-family:Nunito,sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">✕ Ninguno</button>
+        </div>
+      </div>
       <div class="fg"><label>Mes</label><select id="s-mes">
         <option>Septiembre</option><option>Octubre</option><option>Noviembre</option>
         <option>Diciembre</option><option>Enero</option><option>Febrero</option>
@@ -64,14 +70,14 @@
         <option>Junio</option><option>Julio</option>
       </select></div>
     </div>
-    <div style="margin:-4px 0 12px;padding:10px 12px;border-radius:10px;background:#eef8f3;border:1px solid #c9ead8;color:#176b52;font-size:.82rem;line-height:1.45">💡 Selecciona varios alumnos con <strong>Ctrl</strong> (computadora) o manteniendo presionado el dedo (celular). Al guardar, el mismo contenido, PDA y nivel se aplicará a todos los seleccionados.</div>
+    <div style="margin:-4px 0 12px;padding:10px 12px;border-radius:10px;background:#eef8f3;border:1px solid #c9ead8;color:#176b52;font-size:.82rem;line-height:1.45">💡 Selecciona varios alumnos con <strong>Ctrl</strong> (computadora) o manteniendo presionado el dedo (celular), o usa "Seleccionar todos". Al guardar, el mismo contenido y PDA se aplican a todos, pero el nivel de desempeño se califica de forma individual para cada alumno.</div>
     <div class="ley">
       <span class="li"><span class="ld" style="background:var(--rojo)"></span> 1 · Requiere apoyo</span>
       <span class="li"><span class="ld" style="background:var(--nar)"></span> 2 · En proceso</span>
       <span class="li"><span class="ld" style="background:var(--verde)"></span> 3 · Esperado</span>
     </div>
-    <div class="cw" id="campos-wrap"></div>
     <div id="ev-rec-wrap"></div>
+    <div class="cw" id="campos-wrap"></div>
     <div class="acts" style="position:sticky;bottom:0;background:#fff;padding:10px 0 6px;border-top:2px solid var(--bd);margin-top:8px;flex-wrap:wrap">
       <button class="btn bp" onclick="guardar()">💾 Guardar evaluación</button>
       <button class="btn bs" onclick="limpiar()">🔄 Limpiar</button>
@@ -199,7 +205,7 @@
   </div>
 </div>
 
-
+<button id="btn-arriba" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Subir arriba" title="Subir arriba" style="display:none;position:fixed;bottom:22px;right:22px;width:46px;height:46px;border-radius:50%;border:none;background:var(--verde,#2E7D5A);color:#fff;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:999">⬆️</button>
 
 <div id="print-area" style="display:none"></div>
 
@@ -207,6 +213,5 @@
   <script src="app.js"></script>
   <script src="email.js"></script>
   <script src="print.js"></script>
-<button id="to-top" class="to-top" onclick="irArriba()" hidden aria-label="Volver arriba">↑</button>
 </body>
 </html>
