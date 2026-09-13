@@ -215,39 +215,57 @@ header p{color:rgba(255,255,255,.72);font-size:.8rem;margin-top:2px}
 }
 
 @media print {
+  @page { size: letter; margin: 8mm; }
   body > *:not(#print-area) { display: none !important; }
   #print-area {
     display: block !important;
     position: static;
     background: #fff;
-    padding: 10px 6px;
+    padding: 0;
     font-family: 'Nunito Sans', sans-serif;
     color: #1E293B;
+    font-size: .78rem;
   }
   #print-area .print-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    border-bottom: 3px solid #2E7D5A;
-    padding-bottom: 12px;
-    margin-bottom: 18px;
+    gap: 10px;
+    border-bottom: 2px solid #2E7D5A;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
   }
   #print-area .print-title {
     font-family: Nunito, sans-serif;
     font-weight: 900;
-    font-size: 1.15rem;
+    font-size: .95rem;
     color: #1B4F72;
   }
   #print-area .print-subtitle {
-    font-size: .8rem;
+    font-size: .7rem;
     color: #475569;
-    margin-top: 2px;
+    margin-top: 1px;
   }
-  .mc { page-break-inside: avoid; }
-  .mch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Las 4 materias en 2 columnas para aprovechar la hoja y caber en una sola página */
+  #print-area .mc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    align-items: start;
+  }
+  .mc { page-break-inside: avoid; margin-bottom: 0 !important; border-radius: 6px !important; }
+  .mch { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 8px !important; font-size: .74rem !important; }
+  .mcb { padding: 6px 8px !important; }
+  .mr { margin-bottom: 4px !important; }
+  .ml { font-size: .6rem !important; margin-bottom: 1px !important; }
+  .mv { font-size: .7rem !important; line-height: 1.25 !important; padding: 4px 6px !important; }
+  .mnb { font-size: .7rem !important; padding: 2px 8px !important; }
   .no-print { display: none !important; }
+  .rec-box { page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 6px !important; padding: 6px 8px !important; }
   .rec-empty { display: none !important; }
-  .rec-box { page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rec-lbl { font-size: .72rem !important; margin-bottom: 3px !important; }
+  .rec-item { padding: 3px 6px !important; font-size: .68rem !important; margin-bottom: 3px; }
+  .m-firma { margin-top: 8px !important; padding: 6px !important; }
+  .m-firma div { font-size: .68rem !important; }
 }
 
 /* ── Capa visual profesional ── */

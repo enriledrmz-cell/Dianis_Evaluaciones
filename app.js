@@ -737,7 +737,7 @@ function openModal(id){
   if(!ev)return;
   const gradoLabel=ev.grado?`${ev.grado}° Preescolar`:'';
   document.getElementById('m-title').textContent=`${ev.al} · ${ev.mes}${gradoLabel?' · '+gradoLabel:''} · ${ev.fecha}`;
-  let h='';
+  let h='<div class="mc-grid">';
   CK.forEach(k=>{
     // Normalizar siempre a array
     let filas=[];
@@ -777,10 +777,11 @@ function openModal(id){
     });
     h+=`</div></div>`;
   });
-  if(!h) h='<p style="color:#94A3B8;text-align:center;padding:20px">Esta evaluación no tiene datos registrados.</p>';
+  h+='</div>'; // cierra .mc-grid
+  if(h==='<div class="mc-grid"></div>') h='<p style="color:#94A3B8;text-align:center;padding:20px">Esta evaluación no tiene datos registrados.</p>';
   h+=recListStaticHTML(ev.al);
   // Agregar nombre al final
-  h+=`<div style="margin-top:20px;padding:14px 18px;border-top:2px solid #DDE3ED;text-align:center">
+  h+=`<div class="m-firma" style="margin-top:20px;padding:14px 18px;border-top:2px solid #DDE3ED;text-align:center">
     <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;color:#1B4F72">Lic. Diana Evelyn Ramírez Lara</div>
     <div style="font-size:.75rem;color:#64748B;margin-top:2px">Docente de Educación Preescolar</div>
   </div>`;
