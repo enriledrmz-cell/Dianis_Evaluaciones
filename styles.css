@@ -233,15 +233,13 @@ header p{color:rgba(255,255,255,.72);font-size:.8rem;margin-top:2px}
     border-bottom: 2px solid #2E7D5A;
     padding-bottom: 6px;
     margin-bottom: 8px;
-    position: relative;
   }
+  #print-area .print-header > div:first-child { flex: 1; }
   #print-area .print-logo {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 22mm;
+    height: 16mm;
     width: auto;
     object-fit: contain;
+    margin-left: auto;
   }
   #print-area .print-title {
     font-family: Nunito, sans-serif;
