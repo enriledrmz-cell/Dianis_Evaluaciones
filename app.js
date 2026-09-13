@@ -800,14 +800,42 @@ function openModal(id){
 function cModal(e){if(e.target===document.getElementById('modal'))closeModal();}
 function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow='';}
 
-// Imprime la evaluación más reciente de CADA alumno, una por página, de un jalón.
-function imprimirTodos(){
+// Convierte "13/9/2026" -> Date, para poder ordenar fechas cronológicamente
+function parsearFechaMX(f){
+  const [d,m,a]=(f||'').split('/').map(n=>parseInt(n,10));
+  if(!d||!m||!a) return new Date(0);
+  return new Date(a,m-1,d);
+}
+
+function abrirModalImpTodos(){
   const evs=gEv();
   if(!evs.length){alert('No hay evaluaciones guardadas para imprimir.');return;}
+  const fechas=[...new Set(evs.map(e=>e.fecha))].sort((a,b)=>parsearFechaMX(b)-parsearFechaMX(a)); // más reciente primero
+  const sel=document.getElementById('imp-todos-fecha');
+  sel.innerHTML=fechas.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  actualizarInfoImpTodos();
+  document.getElementById('modal-imp-todos').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModalImpTodos(){document.getElementById('modal-imp-todos').classList.remove('open');document.body.style.overflow='';}
+function cModalImpTodos(e){if(e.target===document.getElementById('modal-imp-todos'))closeModalImpTodos();}
+
+function actualizarInfoImpTodos(){
+  const fecha=document.getElementById('imp-todos-fecha').value;
+  const evs=gEv().filter(e=>e.fecha===fecha);
+  const alumnos=new Set(evs.map(e=>e.al));
+  document.getElementById('imp-todos-info').textContent=
+    `📋 ${alumnos.size} alumno${alumnos.size!==1?'s':''} con evaluación registrada ese día.`;
+}
+
+// Imprime, de un jalón, la evaluación de CADA alumno en la fecha elegida (una hoja por alumno).
+function confirmarImprimirTodos(){
+  const fecha=document.getElementById('imp-todos-fecha').value;
+  const evs=gEv().filter(e=>e.fecha===fecha);
+  if(!evs.length){alert('No hay evaluaciones registradas en esa fecha.');return;}
   const porAlumno={};
-  evs.forEach(e=>{ porAlumno[e.al]=e; }); // como se van agregando en orden, la última pisa a las anteriores = la más reciente
+  evs.forEach(e=>{ porAlumno[e.al]=e; }); // si un alumno tiene más de una ese día, se usa la última guardada
   const alumnosOrdenados=ordenAlfabetico(Object.keys(porAlumno));
-  if(!confirm(`Se va a imprimir la evaluación más reciente de ${alumnosOrdenados.length} alumno${alumnosOrdenados.length>1?'s':''} (una hoja por alumno). ¿Continuar?`))return;
 
   const pa=document.getElementById('print-area');
   let html='';
@@ -820,6 +848,7 @@ function imprimirTodos(){
     </div>`;
   });
   pa.innerHTML=html;
+  closeModalImpTodos();
   window.print();
 }
 function borrarTodo(){if(!confirm('¿Borrar todas las evaluaciones?'))return;window.sEv([]);buildRS();}
