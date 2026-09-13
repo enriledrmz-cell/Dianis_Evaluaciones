@@ -732,11 +732,11 @@ function buildRS(){
   c.innerHTML=h;
 }
 
-function openModal(id){
-  const ev=gEv().find(e=>e.id===id);
-  if(!ev)return;
+// Genera el HTML (título + cuerpo) de UNA evaluación. Se usa tanto para verla en el modal
+// como para imprimir a todos los alumnos de un jalón.
+function construirHTMLEvaluacion(ev){
   const gradoLabel=ev.grado?`${ev.grado}° Preescolar`:'';
-  document.getElementById('m-title').textContent=`${ev.al} · ${ev.mes}${gradoLabel?' · '+gradoLabel:''} · ${ev.fecha}`;
+  const titulo=`${ev.al} · ${ev.mes}${gradoLabel?' · '+gradoLabel:''} · ${ev.fecha}`;
   let h='<div class="mc-grid">';
   CK.forEach(k=>{
     // Normalizar siempre a array
@@ -780,17 +780,47 @@ function openModal(id){
   h+='</div>'; // cierra .mc-grid
   if(h==='<div class="mc-grid"></div>') h='<p style="color:#94A3B8;text-align:center;padding:20px">Esta evaluación no tiene datos registrados.</p>';
   h+=recListStaticHTML(ev.al);
-  // Agregar nombre al final
   h+=`<div class="m-firma" style="margin-top:20px;padding:14px 18px;border-top:2px solid #DDE3ED;text-align:center">
     <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;color:#1B4F72">Lic. Diana Evelyn Ramírez Lara</div>
     <div style="font-size:.75rem;color:#64748B;margin-top:2px">Docente de Educación Preescolar</div>
   </div>`;
-  document.getElementById('m-body').innerHTML=h;
+  return {titulo,cuerpo:h};
+}
+
+function openModal(id){
+  const ev=gEv().find(e=>e.id===id);
+  if(!ev)return;
+  const {titulo,cuerpo}=construirHTMLEvaluacion(ev);
+  document.getElementById('m-title').textContent=titulo;
+  document.getElementById('m-body').innerHTML=cuerpo;
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
 }
 function cModal(e){if(e.target===document.getElementById('modal'))closeModal();}
 function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow='';}
+
+// Imprime la evaluación más reciente de CADA alumno, una por página, de un jalón.
+function imprimirTodos(){
+  const evs=gEv();
+  if(!evs.length){alert('No hay evaluaciones guardadas para imprimir.');return;}
+  const porAlumno={};
+  evs.forEach(e=>{ porAlumno[e.al]=e; }); // como se van agregando en orden, la última pisa a las anteriores = la más reciente
+  const alumnosOrdenados=ordenAlfabetico(Object.keys(porAlumno));
+  if(!confirm(`Se va a imprimir la evaluación más reciente de ${alumnosOrdenados.length} alumno${alumnosOrdenados.length>1?'s':''} (una hoja por alumno). ¿Continuar?`))return;
+
+  const pa=document.getElementById('print-area');
+  let html='';
+  alumnosOrdenados.forEach((al,i)=>{
+    const ev=porAlumno[al];
+    const {titulo,cuerpo}=construirHTMLEvaluacion(ev);
+    html+=`<div style="${i>0?'page-break-before:always;':''}padding-top:${i>0?'6mm':'0'}">
+      <div class="print-header"><div><div class="print-title">📋 Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div></div>
+      ${cuerpo}
+    </div>`;
+  });
+  pa.innerHTML=html;
+  window.print();
+}
 function borrarTodo(){if(!confirm('¿Borrar todas las evaluaciones?'))return;window.sEv([]);buildRS();}
 function borrarUna(id){if(!confirm('¿Eliminar esta evaluación?'))return;window.sEv(gEv().filter(e=>e.id!==id));buildRS();}
 
