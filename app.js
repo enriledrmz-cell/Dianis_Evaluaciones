@@ -616,28 +616,6 @@ function setNivel(k,fi,ai,n){
   if(!estado[k][fi].niveles) estado[k][fi].niveles={};
   estado[k][fi].niveles[al]=n;
   pintarNivel(k,fi,ai,al,n);
-  // Si el nivel indica que el alumno necesita reforzar (1 o 2), se agregan
-  // automáticamente las recomendaciones sugeridas para ese contenido.
-  if((n===1||n===2) && estado[k][fi].cont!==null){
-    autoAgregarRecomendacion(k,estado[k][fi].cont,al,ai);
-  }
-}
-
-function autoAgregarRecomendacion(k,contIdx,al,ai){
-  const norm=s=>(s||'').trim().toLowerCase().replace(/[.\s]+$/,'');
-  const nombreCont=norm(D[k][contIdx].nombre);
-  const grupo=(RECS_ALL[k]||[]).find(g=>norm(g.contenido)===nombreCont);
-  if(!grupo || !grupo.items || !grupo.items.length) return;
-  const r=gRec();
-  if(!r[al]) r[al]=[];
-  let agregoAlgo=false;
-  grupo.items.forEach(texto=>{
-    if(!r[al].includes(texto)){ r[al].push(texto); agregoAlgo=true; }
-  });
-  if(agregoAlgo){
-    sRec(r);
-    pintarRecList('ev-'+ai,al);
-  }
 }
 
 // Solo actualiza la interfaz (botón resaltado + texto de la observación) sin tocar el estado
