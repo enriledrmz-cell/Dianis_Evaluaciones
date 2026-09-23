@@ -48,8 +48,8 @@ function gObs(){try{return JSON.parse(localStorage.getItem('d_ob')||'[]')}catch(
 function sObs(a){localStorage.setItem('d_ob',JSON.stringify(a))}
 function gRec(){try{const r=JSON.parse(localStorage.getItem('d_rec')||'{}');Object.keys(r).forEach(k=>{if(typeof r[k]==='string'){r[k]=r[k]?r[k].split('\n').map(s=>s.replace(/^•\s*/,'').trim()).filter(Boolean):[];}});return r;}catch(e){return{}}}
 function sRec(o){localStorage.setItem('d_rec',JSON.stringify(o))}
-function recListStaticHTML(al){
-  const arr=(gRec()[al]||[]);
+function recListStaticHTML(al,recsOverride){
+  const arr=recsOverride!==undefined ? recsOverride : (gRec()[al]||[]);
   if(!arr.length)return'';
   return `<div class="rec-box">
       <div class="rec-lbl">💡 Recomendaciones</div>
@@ -697,7 +697,7 @@ function guardar(){
         return{cont:contNombre,pda:pdaTxt,niv:niv?String(niv):'',nivelTxt};
       }).filter(f=>f.cont||f.pda||f.niv);
     });
-    evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+ai+Math.floor(Math.random()*100000),campos});
+    evs.push({al,mes,grado:gradoActual,fecha:new Date().toLocaleDateString('es-MX'),id:Date.now()+ai+Math.floor(Math.random()*100000),campos,recomendaciones:[...(gRec()[al]||[])]});
   });
   window.sEv(evs);
   alert(`✅ Evaluación guardada para ${alumnos.length} alumno${alumnos.length>1?'s':''}.`);
@@ -764,7 +764,8 @@ function construirHTMLEvaluacion(ev){
         const np=ev.grado?GRADO_NP[ev.grado]:'III';
         for(const cont of (D[k]||[])){
           if(cont.nombre===f.cont){
-            const pdas=cont.pdas.filter(p=>p.nivel_proceso===np);
+            let pdas=cont.pdas.filter(p=>p.nivel_proceso===np);
+            if(!pdas.length) pdas=cont.pdas; // si no hay para ese grado, mejor mostrar algo que nada
             if(pdas.length>0){
               pdaMostrar=pdas[0].texto;
               nivelMostrar=pdas[0][n]||'';
@@ -780,7 +781,7 @@ function construirHTMLEvaluacion(ev){
   });
   h+='</div>'; // cierra .mc-grid
   if(h==='<div class="mc-grid"></div>') h='<p style="color:#94A3B8;text-align:center;padding:20px">Esta evaluación no tiene datos registrados.</p>';
-  h+=recListStaticHTML(ev.al);
+  h+=recListStaticHTML(ev.al,ev.recomendaciones);
   h+=`<div class="m-firma" style="margin-top:20px;padding:14px 18px;border-top:2px solid #DDE3ED;text-align:center">
     <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;color:#1B4F72">Lic. Diana Evelyn Ramírez Lara</div>
     <div style="font-size:.75rem;color:#64748B;margin-top:2px">Docente de Educación Preescolar</div>
@@ -852,6 +853,40 @@ function confirmarImprimirTodos(){
   window.print();
 }
 function borrarTodo(){if(!confirm('¿Borrar todas las evaluaciones?'))return;window.sEv([]);buildRS();}
+
+function abrirModalBorrarFecha(){
+  const evs=gEv();
+  if(!evs.length){alert('No hay evaluaciones guardadas.');return;}
+  const fechas=[...new Set(evs.map(e=>e.fecha))].sort((a,b)=>parsearFechaMX(b)-parsearFechaMX(a));
+  const sel=document.getElementById('borrar-fecha-sel');
+  sel.innerHTML=fechas.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  actualizarInfoBorrarFecha();
+  document.getElementById('modal-borrar-fecha').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModalBorrarFecha(){document.getElementById('modal-borrar-fecha').classList.remove('open');document.body.style.overflow='';}
+function cModalBorrarFecha(e){if(e.target===document.getElementById('modal-borrar-fecha'))closeModalBorrarFecha();}
+
+function actualizarInfoBorrarFecha(){
+  const fecha=document.getElementById('borrar-fecha-sel').value;
+  const evs=gEv().filter(e=>e.fecha===fecha);
+  const alumnos=new Set(evs.map(e=>e.al));
+  document.getElementById('borrar-fecha-info').textContent=
+    `⚠️ Se van a borrar ${evs.length} ${evs.length===1?'evaluación':'evaluaciones'} de ${alumnos.size} alumno${alumnos.size!==1?'s':''} registradas ese día.`;
+}
+
+function confirmarBorrarFecha(){
+  const fecha=document.getElementById('borrar-fecha-sel').value;
+  const evs=gEv();
+  const aBorrar=evs.filter(e=>e.fecha===fecha).length;
+  if(!aBorrar){alert('No hay evaluaciones registradas en esa fecha.');return;}
+  if(!confirm(`¿Seguro que quieres borrar ${aBorrar===1?'esta evaluación':'estas '+aBorrar+' evaluaciones'} del ${fecha}? Esto no se puede deshacer.`))return;
+  const restantes=evs.filter(e=>e.fecha!==fecha);
+  window.sEv(restantes);
+  closeModalBorrarFecha();
+  buildRS();
+  alert('✅ Evaluaciones de esa fecha eliminadas.');
+}
 function borrarUna(id){if(!confirm('¿Eliminar esta evaluación?'))return;window.sEv(gEv().filter(e=>e.id!==id));buildRS();}
 
 function exportarJSON(){

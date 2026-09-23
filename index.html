@@ -90,6 +90,7 @@
     <h2>📊 Resumen</h2>
     <div class="acts" style="margin-top:0;margin-bottom:12px">
       <button class="btn" style="background:#0EA5E9;color:#fff" onclick="abrirModalImpTodos()">🖨️ Imprimir todos</button>
+      <button class="btn bd2" onclick="abrirModalBorrarFecha()">🗑 Borrar por fecha</button>
       <button class="btn bd2" onclick="borrarTodo()">🗑 Borrar todo</button>
       <button class="btn" style="background:#7C3AED;color:#fff" onclick="openEmailModal()">📧 Guardar en correo</button>
       <button class="btn bp" onclick="exportarJSON()">⬇️ Exportar respaldo</button>
@@ -218,6 +219,22 @@
       </div>
       <div id="imp-todos-info" style="font-size:.85rem;color:var(--tx2);margin-bottom:16px"></div>
       <button class="btn bp" onclick="confirmarImprimirTodos()" style="width:100%;justify-content:center;padding:12px">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BORRAR POR FECHA -->
+<div class="mo" id="modal-borrar-fecha" onclick="cModalBorrarFecha(event)">
+  <div class="mi" style="max-width:480px">
+    <div class="mh"><h3>🗑️ Borrar por fecha</h3><button class="mc-btn" onclick="closeModalBorrarFecha()">✕</button></div>
+    <div class="mb" style="max-height:none;padding:22px">
+      <p style="font-size:.9rem;color:var(--tx2);margin-bottom:14px;line-height:1.5">Elige qué día quieres borrar. Se eliminarán solo las evaluaciones guardadas ese día (las demás fechas no se tocan).</p>
+      <div class="fg" style="margin-bottom:14px">
+        <label style="display:block;font-family:Nunito,sans-serif;font-weight:700;font-size:.8rem;color:var(--tx2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Fecha</label>
+        <select id="borrar-fecha-sel" style="width:100%;padding:10px 14px;border:2px solid var(--bd);border-radius:9px;font-family:inherit;font-size:.95rem" onchange="actualizarInfoBorrarFecha()"></select>
+      </div>
+      <div id="borrar-fecha-info" style="font-size:.85rem;color:var(--tx2);margin-bottom:16px"></div>
+      <button class="btn bd2" onclick="confirmarBorrarFecha()" style="width:100%;justify-content:center;padding:12px">🗑️ Borrar esta fecha</button>
     </div>
   </div>
 </div>
