@@ -832,6 +832,20 @@ function confirmarImprimirTodos(){
 }
 function borrarTodo(){if(!confirm('¿Borrar todas las evaluaciones?'))return;window.sEv([]);buildRS();}
 
+// Actualiza las recomendaciones "congeladas" de TODAS las evaluaciones ya guardadas,
+// para que coincidan con la lista actual de cada alumno (útil si borraste algo de la lista
+// de recomendaciones y quieres que también desaparezca de lo ya guardado).
+function resincronizarRecomendaciones(){
+  const evs=gEv();
+  if(!evs.length){alert('No hay evaluaciones guardadas.');return;}
+  if(!confirm('Esto va a actualizar las recomendaciones guardadas en TODAS las evaluaciones, para que coincidan con la lista actual de cada alumno. Lo que ya borraste de la lista de arriba desaparecerá también de las evaluaciones guardadas. ¿Continuar?'))return;
+  const r=gRec();
+  evs.forEach(e=>{ e.recomendaciones=[...(r[e.al]||[])]; });
+  window.sEv(evs);
+  alert('✅ Listo, ya quedaron sincronizadas.');
+  buildRS();
+}
+
 function abrirModalBorrarFecha(){
   const evs=gEv();
   if(!evs.length){alert('No hay evaluaciones guardadas.');return;}
