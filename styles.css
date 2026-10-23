@@ -312,3 +312,10 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
 .concat-select-label{float:right;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;opacity:.95;cursor:pointer}
 .concat-select-label input{width:15px;height:15px;accent-color:#fff}
 @media print{.concat-print-list{display:block}.concat-print-list .concat-card{margin:0 0 10px}.concat-print-list .concat-card-head{font-size:.85rem;padding:8px 10px}.concat-print-list .concat-card-body{padding:9px 10px}.concat-print-list .concat-text{font-size:.78rem;padding:7px 9px}}
+
+#concat-meses{max-height:180px;overflow-y:auto}
+.concat-card{cursor:pointer;transition:transform .15s,box-shadow .15s}.concat-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.concat-modal{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;overflow-y:auto}.concat-modal.open{display:flex}
+.concat-modal-card{width:100%;max-width:780px;max-height:92vh;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 12px 45px rgba(0,0,0,.3)}
+.concat-modal-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;background:linear-gradient(90deg,#1B4F72,#2E7D5A);color:#fff}.concat-modal-head h3{font-family:Nunito,sans-serif;font-size:1.05rem}.concat-modal-head button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:7px;padding:5px 10px;font-size:1rem;cursor:pointer}.concat-modal-body{padding:16px;max-height:calc(92vh - 60px);overflow:auto}.concat-sheet-title{color:#64748b;font-size:.8rem;margin-bottom:10px}.concat-sheet-field{border:1.5px solid var(--bd);border-radius:11px;overflow:hidden;margin-bottom:12px}.concat-sheet-head{padding:10px 14px;color:#fff;font-family:Nunito,sans-serif;font-weight:800}.concat-sheet-body{padding:11px 14px}.concat-sheet-body .concat-text{margin-top:4px}
+@media(max-width:600px){.concat-modal{padding:0}.concat-modal-card{max-height:100dvh;min-height:100dvh;border-radius:0}.concat-modal-body{max-height:calc(100dvh - 60px)}}

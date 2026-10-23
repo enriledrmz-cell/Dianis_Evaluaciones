@@ -189,9 +189,30 @@ function concatenarObservaciones(){
     const meta=Object.values(CMETA).find(m=>m.label===campo);
     const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
     const texto=items.map(o=>o.txt).join(' · ');
-    html+=`<div class="concat-card"><div class="concat-card-head" style="background:${color}"><label class="concat-select-label no-print"><input type="checkbox" class="concat-check" checked> Imprimir</label>${emoji} ${esc(campo)} <span>${esc(al)}</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
+    html+=`<div class="concat-card" onclick="verDetalleConcatenado('${esc(al).replace(/'/g,"\'")}')"><div class="concat-card-head" style="background:${color}"><label class="concat-select-label no-print" onclick="event.stopPropagation()"><input type="checkbox" class="concat-check" checked> Imprimir</label>${emoji} ${esc(campo)} <span>${esc(al)} · Ver hoja →</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
   });
   resultado.innerHTML=html;
+}
+function verDetalleConcatenado(al){
+  const meses=mesesSeleccionadosConcatenar().map(m=>m.toLowerCase());
+  let lista=obtenerObservacionesConsolidadas().filter(o=>o.al===al);
+  if(meses.length)lista=lista.filter(o=>!o.mes||meses.includes(String(o.mes).trim().toLowerCase()));
+  const grupos={};
+  lista.forEach(o=>{const campo=o.campo||'General';(grupos[campo]??=[]).push(o);});
+  let html='<div class="concat-sheet-title">Meses: '+esc(meses.length?meses.join(', '):'Todos')+'</div>';
+  Object.entries(grupos).forEach(([campo,items])=>{
+    const meta=Object.values(CMETA).find(m=>m.label===campo); const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
+    html+=`<div class="concat-sheet-field"><div class="concat-sheet-head" style="background:${color}">${emoji} ${esc(campo)}</div><div class="concat-sheet-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(items.map(o=>o.txt).join(' · '))}</div></div></div>`;
+  });
+  if(!Object.keys(grupos).length)html+='<p class="nd">No hay observaciones para este alumno en los meses seleccionados.</p>';
+  document.getElementById('concat-detail-title').textContent='📋 '+al;
+  document.getElementById('concat-detail-body').innerHTML=html;
+  document.getElementById('concat-detail-modal').classList.add('open'); document.body.style.overflow='hidden';
+}
+function cerrarDetalleConcatenado(e){
+  const modal=document.getElementById('concat-detail-modal');
+  if(e && e.target!==modal)return;
+  modal.classList.remove('open'); document.body.style.overflow='';
 }
 function imprimirConcatenadas(){
   const seleccionadas=Array.from(document.querySelectorAll('#concat-resultado .concat-card')).filter(card=>card.querySelector('.concat-check')?.checked);

@@ -107,7 +107,7 @@
         </div>
         <div class="fg">
           <label>Selecciona los meses</label>
-          <select id="concat-meses" multiple size="4">
+          <select id="concat-meses" multiple size="6" title="Mantén Ctrl o Cmd para seleccionar varios meses">
             <option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
             <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option>
             <option>Mayo</option><option>Junio</option><option>Julio</option>
@@ -237,6 +237,12 @@
 
 <button id="btn-arriba" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Subir arriba" title="Subir arriba" style="display:none;position:fixed;bottom:22px;right:22px;width:46px;height:46px;border-radius:50%;border:none;background:var(--verde,#2E7D5A);color:#fff;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:999">⬆️</button>
 
+<div class="concat-modal" id="concat-detail-modal" onclick="cerrarDetalleConcatenado(event)">
+  <div class="concat-modal-card">
+    <div class="concat-modal-head"><h3 id="concat-detail-title">Observaciones</h3><button type="button" onclick="cerrarDetalleConcatenado()">✕</button></div>
+    <div id="concat-detail-body" class="concat-modal-body"></div>
+  </div>
+</div>
 <div id="print-area" style="display:none"></div>
 
   <script src="data.js"></script>
