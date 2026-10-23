@@ -189,9 +189,17 @@ function concatenarObservaciones(){
     const meta=Object.values(CMETA).find(m=>m.label===campo);
     const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
     const texto=items.map(o=>o.txt).join(' · ');
-    html+=`<div class="concat-card"><div class="concat-card-head" style="background:${color}">${emoji} ${esc(campo)} <span>${esc(al)}</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
+    html+=`<div class="concat-card"><div class="concat-card-head" style="background:${color}"><label class="concat-select-label no-print"><input type="checkbox" class="concat-check" checked> Imprimir</label>${emoji} ${esc(campo)} <span>${esc(al)}</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
   });
   resultado.innerHTML=html;
+}
+function imprimirConcatenadas(){
+  const seleccionadas=Array.from(document.querySelectorAll('#concat-resultado .concat-card')).filter(card=>card.querySelector('.concat-check')?.checked);
+  if(!seleccionadas.length){alert('Selecciona al menos un campo formativo para imprimir.');return;}
+  const pa=document.getElementById('print-area');
+  const contenido=seleccionadas.map(card=>{const copia=card.cloneNode(true);copia.querySelectorAll('.no-print').forEach(el=>el.remove());return copia.outerHTML;}).join('');
+  pa.innerHTML='<div class="print-header"><div><div class="print-title">📝 Observaciones concatenadas</div><div class="print-subtitle">Evaluación Preescolar</div></div><img src="'+getLogoParaImpresion()+'" class="print-logo" alt="Libélula"></div><div class="concat-print-list">'+contenido+'</div>';
+  window.print();
 }
 function buildOb(){
   const obs=obtenerObservacionesConsolidadas(); const c=document.getElementById('ob-cont'); if(!c)return;

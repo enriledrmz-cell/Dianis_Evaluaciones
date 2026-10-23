@@ -306,3 +306,9 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
 .concat-card-body{padding:12px 14px;background:#fff}
 .concat-text{margin-top:4px;padding:9px 11px;border-left:3px solid #2E7D5A;background:#F8FAFC;color:#475569;font-size:.88rem;line-height:1.5;font-style:italic}
 @media(max-width:600px){.concat-controls{grid-template-columns:1fr}.concat-title{font-size:.9rem}}
+
+.concat-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 16px 14px}
+.concat-actions .btn{margin:0}
+.concat-select-label{float:right;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;opacity:.95;cursor:pointer}
+.concat-select-label input{width:15px;height:15px;accent-color:#fff}
+@media print{.concat-print-list{display:block}.concat-print-list .concat-card{margin:0 0 10px}.concat-print-list .concat-card-head{font-size:.85rem;padding:8px 10px}.concat-print-list .concat-card-body{padding:9px 10px}.concat-print-list .concat-text{font-size:.78rem;padding:7px 9px}}
