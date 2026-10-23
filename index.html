@@ -164,6 +164,8 @@
     <h2>📝 Nueva Observación</h2>
     <div class="eg">
       <div class="fg"><label>Alumno</label><select id="ob-al"><option value="">— Selecciona —</option></select></div>
+      <div class="fg"><label>Campo formativo</label><select id="ob-campo"><option value="">— Selecciona —</option><option>Lenguajes</option><option>Pensamiento Científico</option><option>Ética, Naturaleza y Sociedades</option><option>De lo Humano y lo Comunitario</option><option>General</option></select></div>
+      <div class="fg"><label>Mes</label><select id="ob-mes"><option value="">— Selecciona —</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option><option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option></select></div>
     </div>
     <div class="fg" style="margin-bottom:12px">
       <label>Observación</label>
@@ -177,6 +179,7 @@
     <h2>📋 Historial de Observaciones</h2>
     <div class="acts" style="margin-top:0;margin-bottom:12px">
       <button class="btn bd2" onclick="borrarTodoObs()">🗑 Borrar todas</button>
+      <label class="btn bs" style="cursor:pointer">📅 Meses a consultar <select id="ob-meses" multiple size="1" onchange="buildOb()" style="border:0;background:transparent;font:inherit;color:inherit;max-width:180px"><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option><option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option></select></label>
     </div>
     <div id="ob-cont" class="nd">Aún no hay observaciones guardadas.</div>
   </div>

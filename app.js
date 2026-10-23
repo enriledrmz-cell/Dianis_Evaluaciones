@@ -10,6 +10,41 @@ const NL={'1':'Requiere apoyo','2':'En proceso','3':'Esperado'};
 const NB={'1':'b1','2':'b2','3':'b3'};
 const NR={'1':'r1','2':'r2','3':'r3'};
 const NE={'1':'🔴','2':'🟡','3':'🟢'};
+// Altas personalizadas: se agregan como opciones nuevas y no reemplazan el catálogo oficial.
+(function cargarAltasPersonalizadas(){
+  try{
+    const altas=JSON.parse(localStorage.getItem('d_altas')||'{}');
+    CK.forEach(k=>{
+      (altas[k]?.contenidos||[]).forEach(c=>{if(c && c.nombre && !D[k].some(x=>x.nombre===c.nombre)){c.__agregado=true; D[k].push(c);}});
+      Object.entries(altas[k]?.pdaExtras||{}).forEach(([idx,lista])=>{const cont=D[k][Number(idx)]; (lista||[]).forEach(p=>{if(cont && p && p.texto && !cont.pdas.some(x=>x.texto===p.texto)){p.__agregadoPda=true; cont.pdas.push(p);}});});
+    });
+  }catch(e){ console.warn('No se pudieron cargar altas personalizadas',e); }
+})();
+function guardarAltas(){
+  const altas={};
+  CK.forEach(k=>{
+    const pdaExtras={};
+    (D[k]||[]).forEach((c,i)=>{const extra=(c.pdas||[]).filter(p=>p.__agregadoPda);if(extra.length)pdaExtras[i]=extra;});
+    altas[k]={contenidos:(D[k]||[]).slice().filter(c=>c.__agregado).map(c=>({nombre:c.nombre,pdas:c.pdas})),pdaExtras};
+  });
+  localStorage.setItem('d_altas',JSON.stringify(altas));
+}
+function agregarContenido(k){
+  const nombre=(prompt('Escribe el nuevo contenido del campo formativo:')||'').trim();
+  if(!nombre)return;
+  const cont={nombre,pdas:[],__agregado:true};
+  D[k].push(cont); guardarAltas(); renderCampo(k);
+}
+function agregarPda(k,idx){
+  const cont=D[k][idx]; if(!cont)return;
+  const texto=(prompt('Escribe el nuevo PDA para este contenido:')||'').trim();
+  if(!texto)return;
+  const p={texto,nivel_proceso:GRADO_NP[gradoActual]||'III',1:texto,2:texto,3:texto,4:texto};
+  cont.pdas.push(p); p.__agregadoPda=true; guardarAltas();
+  const cSel=document.getElementById(`c-${k}-${estado[k].findIndex(f=>f.cont===idx)}`);
+  CK.forEach(kk=>renderCampo(kk));
+}
+
 
 // Evita que nombres y textos guardados se interpreten como HTML.
 function esc(value){
@@ -94,44 +129,47 @@ function quitarRecItem(idx,al,i){
 }
 
 // ─── OBSERVACIONES ───
+function mesesSeleccionadosObs(){
+  const sel=document.getElementById('ob-meses');
+  return sel ? Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean) : [];
+}
 function guardarObs(){
   const al=document.getElementById('ob-al').value;
+  const campo=document.getElementById('ob-campo').value;
+  const mes=document.getElementById('ob-mes').value;
   const txt=document.getElementById('ob-txt').value.trim();
   if(!al){alert('Selecciona un alumno antes de guardar.');return;}
+  if(!campo){alert('Selecciona un campo formativo antes de guardar.');return;}
+  if(!mes){alert('Selecciona un mes antes de guardar.');return;}
   if(!txt){alert('Escribe una observación antes de guardar.');return;}
-  const fecha=new Date().toLocaleDateString('es-MX');
-  const reg={id:Date.now(),al,fecha,txt};
+  const reg={id:Date.now(),al,campo,mes,fecha:new Date().toLocaleDateString('es-MX'),txt};
   const obs=gObs();obs.push(reg);window.sObs(obs);
   document.getElementById('ob-txt').value='';
-  alert(`✅ Observación de ${al} guardada.`);
-  buildOb();
+  alert(`✅ Observación de ${al} guardada.`); buildOb();
 }
-
 function buildOb(){
-  const obs=gObs();
-  const c=document.getElementById('ob-cont');
-  if(!c)return;
-  if(!obs.length){c.innerHTML='<p class="nd">Aún no hay observaciones guardadas.</p>';return;}
+  const obs=gObs(); const c=document.getElementById('ob-cont'); if(!c)return;
+  const meses=mesesSeleccionadosObs();
+  const filtradas=meses.length?obs.filter(o=>!o.mes||meses.includes(o.mes)):obs;
+  if(!filtradas.length){c.innerHTML='<p class="nd">No hay observaciones para los meses seleccionados.</p>';return;}
   const por={};
-  obs.forEach(o=>{if(!por[o.al])por[o.al]=[];por[o.al].push(o);});
-  Object.values(por).forEach(list=>list.sort((a,b)=>b.id-a.id));
-  let h='';
-  Object.entries(por).forEach(([al,list])=>{
-    h+=`<div class="al-g"><div class="al-n">👤 ${esc(al)}<span class="al-c">${list.length} observación${list.length>1?'es':''}</span></div><div class="ev-list">`;
-    list.forEach(o=>{
-      h+=`<div class="ev-item" style="cursor:default">
-        <div class="ev-h" style="position:relative"><div class="ev-hl">📅 ${o.fecha}</div><div class="ev-hr"></div><button onclick="borrarObs(${o.id})" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" title="Eliminar esta observación">🗑</button></div>
-        <div style="padding:10px 14px;font-size:.88rem;color:var(--tx);line-height:1.5;white-space:pre-wrap">${o.txt}</div>
-      </div>`;
+  filtradas.forEach(o=>{const campo=o.campo||'General'; if(!por[o.al])por[o.al]={}; if(!por[o.al][campo])por[o.al][campo]=[]; por[o.al][campo].push(o);});
+  let h=`<div style="margin-bottom:10px;color:var(--tx2);font-size:.82rem">Se muestran las observaciones concatenadas por campo formativo. Selecciona uno o varios meses para consultar un periodo.</div>`;
+  Object.entries(por).forEach(([al,campos])=>{
+    const total=Object.values(campos).reduce((n,a)=>n+a.length,0);
+    h+=`<div class="al-g"><div class="al-n">👤 ${esc(al)}<span class="al-c">${total} observación${total!==1?'es':''}</span></div><div class="ev-list">`;
+    Object.entries(campos).forEach(([campo,list])=>{
+      list.sort((a,b)=>(a.id||0)-(b.id||0));
+      const texto=list.map(o=>o.txt).join(' · ');
+      const mesesTexto=[...new Set(list.map(o=>o.mes).filter(Boolean))].join(', ');
+      h+=`<div class="ev-item" style="cursor:default"><div class="ev-h" style="position:relative"><div class="ev-hl">${esc(campo)}</div><div class="ev-hr">${esc(mesesTexto||'Sin mes')}</div><button onclick="borrarObsCampo('${esc(al).replace(/'/g,"\'")}','${esc(campo).replace(/'/g,"\'")}')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer" title="Eliminar observaciones de este campo">🗑</button></div><div style="padding:10px 14px;font-size:.88rem;color:var(--tx);line-height:1.5;white-space:pre-wrap">${esc(texto)}</div></div>`;
     });
     h+=`</div></div>`;
-  });
-  c.innerHTML=h;
+  }); c.innerHTML=h;
 }
-
+function borrarObsCampo(al,campo){if(!confirm('¿Eliminar todas las observaciones de este campo para este alumno?'))return;window.sObs(gObs().filter(o=>!(o.al===al&&(o.campo||'General')===campo)));buildOb();}
 function borrarObs(id){if(!confirm('¿Eliminar esta observación?'))return;window.sObs(gObs().filter(o=>o.id!==id));buildOb();}
 function borrarTodoObs(){if(!confirm('¿Borrar todas las observaciones?'))return;window.sObs([]);buildOb();}
-
 function showTab(t,btn){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -495,7 +533,7 @@ function renderCampo(k){
           <select class="sc" id="c-${k}-${fi}" onchange="onCont('${k}',${fi})" style="flex:1">
             <option value="">— Selecciona contenido —</option>${contOpts}
           </select>
-          <button type="button" title="Editar texto de este contenido" onclick="if(estado['${k}'][${fi}].cont!==null)editarContenido('${k}',estado['${k}'][${fi}].cont);else alert('Primero selecciona un contenido.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
+          <button type="button" title="Agregar un contenido nuevo sin modificar los existentes" onclick="agregarContenido('${k}')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">＋</button>
         </div>
       </div>
       <div style="margin-bottom:8px">
@@ -504,7 +542,7 @@ function renderCampo(k){
           <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})" style="flex:1">
             <option value="">— Selecciona primero el contenido —</option>
           </select>
-          <button type="button" title="Editar texto de este PDA" onclick="if(estado['${k}'][${fi}].pdaIdx!==null)editarPda('${k}',estado['${k}'][${fi}].cont,estado['${k}'][${fi}].pdaIdx);else alert('Primero selecciona un PDA.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
+          <button type="button" title="Agregar un PDA nuevo sin modificar los existentes" onclick="if(estado['${k}'][${fi}].cont!==null)agregarPda('${k}',estado['${k}'][${fi}].cont);else alert('Primero selecciona un contenido.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">＋</button>
         </div>
       </div>
       <div>
@@ -822,7 +860,7 @@ function confirmarImprimirTodos(){
     const ev=porAlumno[al];
     const {titulo,cuerpo}=construirHTMLEvaluacion(ev);
     html+=`<div style="${i>0?'page-break-before:always;':''}padding-top:${i>0?'6mm':'0'}">
-      <div class="print-header"><div><div class="print-title">📋 Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div><img src="${LOGO_MAESTRA_B64}" class="print-logo" alt=""></div>
+      <div class="print-header"><div><div class="print-title">📋 Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div><img src="${getLogoParaImpresion()}" class="print-logo" alt=""></div>
       ${cuerpo}
     </div>`;
   });
