@@ -37,7 +37,6 @@
   <button class="tab-btn" onclick="showTab('ev',this)">📋 Evaluación</button>
   <button class="tab-btn" onclick="showTab('rs',this)">📊 Resumen</button>
   <button class="tab-btn" onclick="showTab('as',this)">📅 Asistencia</button>
-  <button class="tab-btn" onclick="showTab('ob',this)">📝 Observaciones</button>
 </div>
 
 <div id="tab-al" class="sec active">
@@ -99,6 +98,25 @@
       <input type="file" id="imp-inp" accept=".json" style="display:none" onchange="importarJSON(event)">
     </div>
     <div id="rs-cont" class="nd">Aún no hay evaluaciones guardadas.</div>
+    <div class="concat-box" id="concat-box">
+      <div class="concat-title">📝 Concatenar observaciones</div>
+      <div class="concat-controls">
+        <div class="fg">
+          <label>Alumno</label>
+          <select id="concat-al"><option value="">— Todos los alumnos —</option></select>
+        </div>
+        <div class="fg">
+          <label>Selecciona los meses</label>
+          <select id="concat-meses" multiple size="4">
+            <option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+            <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option>
+            <option>Mayo</option><option>Junio</option><option>Julio</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn bp" type="button" onclick="concatenarObservaciones()">📝 Concatenar</button>
+      <div id="concat-resultado" class="concat-resultado"><p class="nd">Selecciona los meses y presiona «Concatenar».</p></div>
+    </div>
   </div>
 </div>
 
@@ -156,32 +174,6 @@
       </table>
     </div>
     
-  </div>
-</div>
-
-<div id="tab-ob" class="sec">
-  <div class="card">
-    <h2>📝 Nueva Observación</h2>
-    <div class="eg">
-      <div class="fg"><label>Alumno</label><select id="ob-al"><option value="">— Selecciona —</option></select></div>
-      <div class="fg"><label>Campo formativo</label><select id="ob-campo"><option value="">— Selecciona —</option><option>Lenguajes</option><option>Pensamiento Científico</option><option>Ética, Naturaleza y Sociedades</option><option>De lo Humano y lo Comunitario</option><option>General</option></select></div>
-      <div class="fg"><label>Mes</label><select id="ob-mes"><option value="">— Selecciona —</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option><option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option></select></div>
-    </div>
-    <div class="fg" style="margin-bottom:12px">
-      <label>Observación</label>
-      <textarea id="ob-txt" placeholder="Escribe aquí la observación…" style="width:100%;min-height:100px;padding:9px 12px;border:2px solid var(--bd);border-radius:9px;font-family:inherit;font-size:.9rem;resize:vertical" onfocus="this.style.borderColor='var(--verde)'" onblur="this.style.borderColor='var(--bd)'"></textarea>
-    </div>
-    <div class="acts" style="margin-top:0">
-      <button class="btn bp" onclick="guardarObs()">💾 Guardar observación</button>
-    </div>
-  </div>
-  <div class="card">
-    <h2>📋 Historial de Observaciones</h2>
-    <div class="acts" style="margin-top:0;margin-bottom:12px">
-      <button class="btn bd2" onclick="borrarTodoObs()">🗑 Borrar todas</button>
-      <label class="btn bs" style="cursor:pointer">📅 Meses a consultar <select id="ob-meses" multiple size="1" onchange="buildOb()" style="border:0;background:transparent;font:inherit;color:inherit;max-width:180px"><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option><option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option></select></label>
-    </div>
-    <div id="ob-cont" class="nd">Aún no hay observaciones guardadas.</div>
   </div>
 </div>
 

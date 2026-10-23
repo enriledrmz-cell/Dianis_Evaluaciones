@@ -163,6 +163,36 @@ function obtenerObservacionesConsolidadas(){
   });
   return todas;
 }
+function mesesSeleccionadosConcatenar(){
+  const sel=document.getElementById('concat-meses');
+  return sel?Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean):[];
+}
+function pintarSelectConcatenar(){
+  const sel=document.getElementById('concat-al'); if(!sel)return;
+  const actual=sel.value;
+  const alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
+  sel.innerHTML='<option value="">— Todos los alumnos —</option>'+alumnos.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  if(alumnos.includes(actual))sel.value=actual;
+}
+function concatenarObservaciones(){
+  const resultado=document.getElementById('concat-resultado'); if(!resultado)return;
+  const alumno=document.getElementById('concat-al')?.value||'';
+  const meses=mesesSeleccionadosConcatenar().map(m=>m.toLowerCase());
+  let lista=obtenerObservacionesConsolidadas().filter(o=>!alumno||o.al===alumno);
+  if(meses.length)lista=lista.filter(o=>!o.mes||meses.includes(String(o.mes).trim().toLowerCase()));
+  if(!lista.length){resultado.innerHTML='<p class="nd">No hay observaciones para los criterios seleccionados.</p>';return;}
+  const grupos={};
+  lista.forEach(o=>{const clave=`${o.al}||${o.campo||'General'}`;(grupos[clave]??=[]).push(o);});
+  let html='';
+  Object.entries(grupos).forEach(([clave,items])=>{
+    const [al,campo]=clave.split('||');
+    const meta=Object.values(CMETA).find(m=>m.label===campo);
+    const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
+    const texto=items.map(o=>o.txt).join(' · ');
+    html+=`<div class="concat-card"><div class="concat-card-head" style="background:${color}">${emoji} ${esc(campo)} <span>${esc(al)}</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
+  });
+  resultado.innerHTML=html;
+}
 function buildOb(){
   const obs=obtenerObservacionesConsolidadas(); const c=document.getElementById('ob-cont'); if(!c)return;
   const meses=mesesSeleccionadosObs();
@@ -200,7 +230,6 @@ function showTab(t,btn){
   if(t==='ev')buildForm();
   if(t==='rs')buildRS();
   if(t==='as')buildAsistencia();
-  if(t==='ob')buildOb();
 }
 
 // ─── ASISTENCIA ───
@@ -412,6 +441,7 @@ function renderAl(){
     const curOb=selOb.value;
     selOb.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${a===curOb?' selected':''}>${esc(a)}</option>`).join('');
   }
+  pintarSelectConcatenar();
 }
 function ordenAlfabetico(al){
   return [...al].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
