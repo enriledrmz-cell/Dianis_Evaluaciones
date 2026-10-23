@@ -147,11 +147,33 @@ function guardarObs(){
   document.getElementById('ob-txt').value='';
   alert(`✅ Observación de ${al} guardada.`); buildOb();
 }
+function obtenerObservacionesConsolidadas(){
+  // Observaciones capturadas manualmente en esta pestaña.
+  const todas=gObs().map(o=>({...o,campo:o.campo||'General'}));
+  // También incorpora las observaciones/niveles escritos en cada evaluación.
+  // Así se pueden juntar, por campo formativo, los meses elegidos.
+  gEv().forEach(ev=>{
+    CK.forEach(k=>{
+      const filas=Array.isArray(ev.campos?.[k])?ev.campos[k]:[ev.campos?.[k]].filter(Boolean);
+      filas.forEach((f,i)=>{
+        const texto=(f?.nivelTxt||'').trim();
+        if(texto) todas.push({id:Number(ev.id||0)+i,al:ev.al,campo:CMETA[k].label,mes:ev.mes,fecha:ev.fecha,txt:texto,origen:'evaluacion'});
+      });
+    });
+  });
+  return todas;
+}
 function buildOb(){
-  const obs=gObs(); const c=document.getElementById('ob-cont'); if(!c)return;
+  const obs=obtenerObservacionesConsolidadas(); const c=document.getElementById('ob-cont'); if(!c)return;
   const meses=mesesSeleccionadosObs();
-  const filtradas=meses.length?obs.filter(o=>!o.mes||meses.includes(o.mes)):obs;
-  if(!filtradas.length){c.innerHTML='<p class="nd">No hay observaciones para los meses seleccionados.</p>';return;}
+  const normalizarMes=v=>String(v||'').trim().toLowerCase();
+  const mesesNorm=meses.map(normalizarMes);
+  const filtradas=mesesNorm.length?obs.filter(o=>{
+    // Los registros antiguos sin mes siguen visibles para no perder información.
+    if(!o.mes)return true;
+    return mesesNorm.includes(normalizarMes(o.mes));
+  }):obs;
+  if(!filtradas.length){c.innerHTML='<p class="nd">No hay observaciones para los meses seleccionados. Verifica que existan evaluaciones u observaciones guardadas en esos meses.</p>';return;}
   const por={};
   filtradas.forEach(o=>{const campo=o.campo||'General'; if(!por[o.al])por[o.al]={}; if(!por[o.al][campo])por[o.al][campo]=[]; por[o.al][campo].push(o);});
   let h=`<div style="margin-bottom:10px;color:var(--tx2);font-size:.82rem">Se muestran las observaciones concatenadas por campo formativo. Selecciona uno o varios meses para consultar un periodo.</div>`;
