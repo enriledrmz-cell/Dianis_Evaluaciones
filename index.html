@@ -102,8 +102,9 @@
       <div class="concat-title">📝 Concatenar observaciones</div>
       <div class="concat-controls">
         <div class="fg">
-          <label>Alumno</label>
-          <select id="concat-al"><option value="">— Todos los alumnos —</option></select>
+          <label>Alumnos <span class="concat-help">(puedes elegir varios)</span></label>
+          <select id="concat-al" multiple size="5" title="Selecciona uno o varios alumnos"></select>
+          <div class="concat-student-actions"><button type="button" onclick="seleccionarTodosConcatenar()">✅ Seleccionar todos</button><button type="button" onclick="deseleccionarTodosConcatenar()">✕ Ninguno</button></div>
         </div>
         <div class="fg">
           <label>Selecciona los meses</label>

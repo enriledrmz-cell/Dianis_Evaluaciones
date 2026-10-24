@@ -169,18 +169,29 @@ function mesesSeleccionadosConcatenar(){
 }
 function pintarSelectConcatenar(){
   const sel=document.getElementById('concat-al'); if(!sel)return;
-  const actual=sel.value;
+  const actuales=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
   const alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
-  sel.innerHTML='<option value="">— Todos los alumnos —</option>'+alumnos.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
-  if(alumnos.includes(actual))sel.value=actual;
+  sel.innerHTML=alumnos.map(a=>`<option value="${esc(a)}"${actuales.has(a)?' selected':''}>${esc(a)}</option>`).join('');
+}
+function seleccionarTodosConcatenar(){
+  const sel=document.getElementById('concat-al'); if(!sel)return;
+  Array.from(sel.options).forEach(o=>o.selected=true);
+}
+function deseleccionarTodosConcatenar(){
+  const sel=document.getElementById('concat-al'); if(!sel)return;
+  Array.from(sel.options).forEach(o=>o.selected=false);
+}
+function alumnosSeleccionadosConcatenar(){
+  const sel=document.getElementById('concat-al');
+  return sel?Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean):[];
 }
 function concatenarObservaciones(){
   const resultado=document.getElementById('concat-resultado'); if(!resultado)return;
-  const alumno=document.getElementById('concat-al')?.value||'';
+  const alumnos=alumnosSeleccionadosConcatenar();
   const meses=mesesSeleccionadosConcatenar().map(m=>m.toLowerCase());
-  let lista=obtenerObservacionesConsolidadas().filter(o=>!alumno||o.al===alumno);
+  let lista=obtenerObservacionesConsolidadas().filter(o=>!alumnos.length||alumnos.includes(o.al));
   if(meses.length)lista=lista.filter(o=>!o.mes||meses.includes(String(o.mes).trim().toLowerCase()));
-  if(!lista.length){resultado.innerHTML='<p class="nd">No hay observaciones para los criterios seleccionados.</p>';return;}
+  if(!lista.length){resultado.innerHTML='<p class="nd">No hay observaciones para los alumnos y meses seleccionados.</p>';return;}
   const grupos={};
   lista.forEach(o=>{const clave=`${o.al}||${o.campo||'General'}`;(grupos[clave]??=[]).push(o);});
   let html='';
@@ -1000,47 +1011,78 @@ function confirmarBorrarFecha(){
 }
 function borrarUna(id){if(!confirm('¿Eliminar esta evaluación?'))return;window.sEv(gEv().filter(e=>e.id!==id));buildRS();}
 
+function leerJSONLocal(key,fallback){
+  try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch(e){return fallback;}
+}
+function firmaRegistro(reg){
+  if(reg && reg.id!==undefined && reg.id!==null && String(reg.id)!=='')return `id:${reg.id}`;
+  try{return JSON.stringify(reg);}catch(e){return String(reg);}
+}
+function unirSinDuplicados(actuales,nuevos){
+  const resultado=[...(Array.isArray(actuales)?actuales:[])];
+  const firmas=new Set(resultado.map(firmaRegistro));
+  (Array.isArray(nuevos)?nuevos:[]).forEach(item=>{const firma=firmaRegistro(item);if(!firmas.has(firma)){firmas.add(firma);resultado.push(item);}});
+  return resultado;
+}
 function exportarJSON(){
-  const datos={alumnos:gAl(),evaluaciones:gEv(),observaciones:gObs(),recomendaciones:gRec()};
-  const blob=new Blob([JSON.stringify(datos,null,2)],{type:'application/json'});
+  const datos={
+    formato:'evaluacion-preescolar-respaldo',
+    version:2,
+    exportadoEn:new Date().toISOString(),
+    alumnos:gAl(),
+    evaluaciones:gEv(),
+    observaciones:gObs(),
+    recomendaciones:gRec(),
+    asistencia:gAs(),
+    sobrescrituras:gOv(),
+    altas:leerJSONLocal('d_altas',{})
+  };
+  const contenido=JSON.stringify(datos,null,2);
+  const blob=new Blob([contenido],{type:'application/json;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const fecha=new Date().toLocaleDateString('es-MX').replace(/\//g,'-');
+  const fecha=new Date().toISOString().slice(0,10);
   a.href=url;a.download=`respaldo_evaluaciones_${fecha}.json`;
-  a.click();URL.revokeObjectURL(url);
+  a.style.display='none';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+  alert('✅ Respaldo completo descargado correctamente.');
 }
-
 function importarJSON(e){
-  const file=e.target.files[0];
+  const input=e.target; const file=input.files?.[0];
   if(!file)return;
+  if(!file.name.toLowerCase().endsWith('.json')){alert('❌ Selecciona un archivo JSON de respaldo.');input.value='';return;}
   const reader=new FileReader();
   reader.onload=function(ev){
     try{
       const datos=JSON.parse(ev.target.result);
-      if(!datos.evaluaciones)throw new Error('Formato inválido');
-      const evActuales=gEv();
-      const alActuales=gAl();
-      const obActuales=gObs();
-      // Merge: evitar duplicados por id
-      const idsActuales=new Set(evActuales.map(e=>e.id));
-      const nuevasEvs=datos.evaluaciones.filter(e=>!idsActuales.has(e.id));
-      const idsObActuales=new Set(obActuales.map(o=>o.id));
-      const nuevasObs=(datos.observaciones||[]).filter(o=>!idsObActuales.has(o.id));
-      const todosAl=ordenAlfabetico([...new Set([...alActuales,...(datos.alumnos||[])])]);
-      window.sAl(todosAl);
-      window.sEv([...evActuales,...nuevasEvs]);
-      window.sObs([...obActuales,...nuevasObs]);
-      sRec({...gRec(),...(datos.recomendaciones||{})});
-      renderAl();buildRS();buildOb();
-      alert(`✅ Importado: ${nuevasEvs.length} evaluación(es) nueva(s), ${nuevasObs.length} observación(es) nueva(s) y ${todosAl.length} alumno(s).`);
+      if(!datos || typeof datos!=='object' || !Array.isArray(datos.evaluaciones) || !Array.isArray(datos.alumnos)){
+        throw new Error('El archivo no tiene el formato de respaldo de la aplicación.');
+      }
+      const evsAntes=gEv(),obsAntes=gObs(),alAntes=gAl();
+      const evs=unirSinDuplicados(evsAntes,datos.evaluaciones);
+      const obs=unirSinDuplicados(obsAntes,datos.observaciones||[]);
+      const alumnos=ordenAlfabetico([...new Set([...alAntes,...datos.alumnos].filter(Boolean))]);
+      window.sAl(alumnos);window.sEv(evs);window.sObs(obs);
+      // Las recomendaciones se combinan por alumno sin repetir textos.
+      const rec= gRec();
+      Object.entries(datos.recomendaciones||{}).forEach(([al,lista])=>{
+        const incoming=Array.isArray(lista)?lista:(typeof lista==='string'?[lista]:[]);
+        rec[al]=[...new Set([...(rec[al]||[]),...incoming].map(x=>String(x).trim()).filter(Boolean))];
+      });
+      sRec(rec);
+      if(datos.asistencia && typeof datos.asistencia==='object')sAs(datos.asistencia);
+      if(datos.sobrescrituras && typeof datos.sobrescrituras==='object')sOv(datos.sobrescrituras);
+      if(datos.altas && typeof datos.altas==='object')localStorage.setItem('d_altas',JSON.stringify(datos.altas));
+      alert(`✅ Respaldo importado correctamente.\n\nAlumnos: ${alumnos.length}\nEvaluaciones nuevas: ${evs.length-evsAntes.length}\nObservaciones nuevas: ${obs.length-obsAntes.length}\n\nLa página se actualizará para cargar todos los datos.`);
+      setTimeout(()=>location.reload(),250);
     }catch(err){
-      alert('❌ Archivo inválido. Asegúrate de usar un respaldo exportado desde esta app.');
-    }
-    e.target.value='';
+      console.error('Error al importar respaldo:',err);
+      alert('❌ No se pudo importar el archivo. Selecciona un JSON generado por el botón «Exportar respaldo».');
+    }finally{input.value='';}
   };
-  reader.readAsText(file);
+  reader.onerror=()=>{alert('❌ No se pudo leer el archivo seleccionado.');input.value='';};
+  reader.readAsText(file,'utf-8');
 }
-
 // ─── GRADO ───
 let gradoActual = 3; // default 3°
 
