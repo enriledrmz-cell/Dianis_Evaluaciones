@@ -115,7 +115,7 @@
           </select>
         </div>
       </div>
-      <div class="concat-actions"><button class="btn bp" type="button" onclick="concatenarObservaciones()">📝 Concatenar</button><button class="btn" type="button" style="background:#0EA5E9;color:#fff" onclick="imprimirConcatenadas()">🖨️ Imprimir seleccionados</button></div>
+      <div class="concat-actions"><button class="btn bp" type="button" onclick="concatenarObservaciones()">📝 Concatenar</button><button class="btn" type="button" style="background:#0EA5E9;color:#fff" onclick="imprimirTodosAlumnosConcatenados()">🖨️ Imprimir todos por alumno</button><button class="btn" type="button" style="background:#16803C;color:#fff" onclick="exportarConcatenadasExcel()">📊 Exportar a Excel</button></div>
       <div id="concat-resultado" class="concat-resultado"><p class="nd">Selecciona los meses y presiona «Concatenar».</p></div>
     </div>
   </div>
@@ -240,7 +240,7 @@
 
 <div class="concat-modal" id="concat-detail-modal" onclick="cerrarDetalleConcatenado(event)">
   <div class="concat-modal-card">
-    <div class="concat-modal-head"><h3 id="concat-detail-title">Observaciones</h3><div class="concat-modal-actions"><button type="button" onclick="imprimirDetalleConcatenado()">🖨️ Imprimir todos</button><button type="button" onclick="cerrarDetalleConcatenado()">✕</button></div></div>
+    <div class="concat-modal-head"><h3 id="concat-detail-title">Observaciones</h3><div class="concat-modal-actions"><button type="button" onclick="imprimirDetalleConcatenado()">🖨️ Imprimir tabla</button><button type="button" onclick="cerrarDetalleConcatenado()">✕</button></div></div>
     <div id="concat-detail-body" class="concat-modal-body"></div>
   </div>
 </div>

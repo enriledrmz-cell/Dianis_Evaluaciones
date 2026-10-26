@@ -237,13 +237,71 @@ function verDetalleConcatenado(al){
   document.getElementById('concat-detail-body').innerHTML=html;
   document.getElementById('concat-detail-modal').classList.add('open'); document.body.style.overflow='hidden';
 }
+function mesesParaImpresionConcatenada(){
+  const elegidos=mesesSeleccionadosConcatenar();
+  if(elegidos.length)return elegidos;
+  const vistos=[];
+  obtenerObservacionesConsolidadas().forEach(o=>{if(o.mes&&!vistos.some(m=>m.toLowerCase()===String(o.mes).toLowerCase()))vistos.push(o.mes);});
+  return vistos;
+}
+function htmlTablaAlumnoConcatenado(al,meses){
+  const registros=obtenerObservacionesConsolidadas().filter(o=>o.al===al);
+  const por={};
+  registros.forEach(o=>{const mes=String(o.mes||'Sin mes');const campo=o.campo||'General';if(!por[campo])por[campo]={};if(!por[campo][mes.toLowerCase()])por[campo][mes.toLowerCase()]=[];por[campo][mes.toLowerCase()].push(o.txt);});
+  const campos=Object.keys(por);
+  let h='<table class="concat-print-table"><thead><tr><th>Campo formativo</th>'+meses.map(m=>`<th>${esc(m)}</th>`).join('')+'</tr></thead><tbody>';
+  campos.forEach(campo=>{const meta=Object.values(CMETA).find(m=>m.label===campo);const color=meta?.color||'#2E7D5A';h+=`<tr><th style="border-left:4px solid ${color}">${esc(campo)}</th>`+meses.map(m=>`<td>${esc((por[campo][m.toLowerCase()]||[]).join(' · '))}</td>`).join('')+'</tr>';});
+  h+='</tbody></table>';
+  if(!campos.length)h='<p class="nd">No hay observaciones para este alumno en los meses seleccionados.</p>';
+  return h;
+}
 function imprimirDetalleConcatenado(){
-  const body=document.getElementById('concat-detail-body');
-  if(!body || !body.textContent.trim()){alert('No hay observaciones para imprimir.');return;}
-  const copia=body.cloneNode(true);
-  const titulo=document.getElementById('concat-detail-title').textContent;
+  const al=document.getElementById('concat-detail-title').textContent.replace(/^📋\s*/,'');
+  const meses=mesesParaImpresionConcatenada();
+  if(!meses.length){alert('No hay meses para imprimir.');return;}
   const pa=document.getElementById('print-area');
-  pa.innerHTML='<div class="print-header"><div><div class="print-title">📝 Observaciones por mes</div><div class="print-subtitle">'+esc(titulo)+'</div></div><img src="'+getLogoParaImpresion()+'" class="print-logo" alt="Libélula"></div>'+copia.innerHTML;
+  pa.innerHTML='<div class="concat-print-page"><div class="print-header"><div><div class="print-title">📝 Observaciones por mes</div><div class="print-subtitle">'+esc(al)+'</div></div><img src="'+getLogoParaImpresion()+'" class="print-logo" alt="Libélula"></div>'+htmlTablaAlumnoConcatenado(al,meses)+'</div>';
+  window.print();
+}
+function escaparXmlExcel(valor){
+  return String(valor??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+function alumnosParaImpresionConcatenada(){
+  let alumnos=alumnosSeleccionadosConcatenar();
+  if(!alumnos.length)alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
+  return alumnos;
+}
+function exportarConcatenadasExcel(){
+  const alumnos=alumnosParaImpresionConcatenada();
+  const meses=mesesParaImpresionConcatenada();
+  if(!alumnos.length){alert('Selecciona al menos un alumno o guarda observaciones primero.');return;}
+  if(!meses.length){alert('Selecciona al menos un mes o guarda observaciones con mes.');return;}
+  const obs=obtenerObservacionesConsolidadas();
+  const worksheets=alumnos.map(al=>{
+    const registros=obs.filter(o=>o.al===al); const por={};
+    registros.forEach(o=>{const mes=String(o.mes||'Sin mes').toLowerCase();const campo=o.campo||'General';if(!por[campo])por[campo]={};if(!por[campo][mes])por[campo][mes]=[];por[campo][mes].push(o.txt);});
+    const campos=Object.keys(por);
+    const rows=[];
+    rows.push('<Row><Cell ss:StyleID="Title"><Data ss:Type="String">'+escaparXmlExcel(al)+'</Data></Cell></Row>');
+    rows.push('<Row><Cell ss:StyleID="Header"><Data ss:Type="String">Campo formativo</Data></Cell>'+meses.map(m=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escaparXmlExcel(m)+'</Data></Cell>').join('')+'</Row>');
+    campos.forEach(campo=>rows.push('<Row><Cell ss:StyleID="Field"><Data ss:Type="String">'+escaparXmlExcel(campo)+'</Data></Cell>'+meses.map(m=>'<Cell><Data ss:Type="String">'+escaparXmlExcel((por[campo][m.toLowerCase()]||[]).join(' · '))+'</Data></Cell>').join('')+'</Row>'));
+    if(!campos.length)rows.push('<Row><Cell><Data ss:Type="String">Sin observaciones en los meses seleccionados</Data></Cell></Row>');
+    const nombre=String(al).replace(/[\\\/:?*\[\]]/g,'').slice(0,31)||'Alumno';
+    return '<Worksheet ss:Name="'+escaparXmlExcel(nombre)+'"><Table>'+rows.join('')+'</Table></Worksheet>';
+  }).join('');
+  const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Title"><Font ss:Bold="1" ss:Size="14"/><Interior ss:Color="#D6EFE3" ss:Pattern="Solid"/></Style><Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1B4F72" ss:Pattern="Solid"/></Style><Style ss:ID="Field"><Font ss:Bold="1"/></Style></Styles>'+worksheets+'</Workbook>';
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url;a.download='observaciones_concatenadas_'+new Date().toISOString().slice(0,10)+'.xls';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+  alert('✅ Archivo de Excel descargado. Incluye una hoja por alumno.');
+}
+function imprimirTodosAlumnosConcatenados(){
+  let alumnos=alumnosSeleccionadosConcatenar();
+  if(!alumnos.length)alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
+  const meses=mesesParaImpresionConcatenada();
+  if(!alumnos.length){alert('Selecciona al menos un alumno o guarda observaciones primero.');return;}
+  if(!meses.length){alert('Selecciona al menos un mes o guarda observaciones con mes.');return;}
+  const pa=document.getElementById('print-area');
+  pa.innerHTML=alumnos.map((al,i)=>`<div class="concat-print-page" style="${i?'page-break-before:always;':''}"><div class="print-header"><div><div class="print-title">📝 Observaciones por mes</div><div class="print-subtitle">${esc(al)}</div></div><img src="${getLogoParaImpresion()}" class="print-logo" alt="Libélula"></div>${htmlTablaAlumnoConcatenado(al,meses)}</div>`).join('');
   window.print();
 }
 function cerrarDetalleConcatenado(e){

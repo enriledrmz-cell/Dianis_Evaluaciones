@@ -327,3 +327,14 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
 
 .concat-modal-actions{display:flex;align-items:center;gap:6px}.concat-modal-actions button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:7px;padding:5px 10px;font-family:Nunito,sans-serif;font-weight:700;cursor:pointer}.concat-month-sheet{page-break-inside:avoid;margin-bottom:16px}.concat-month-title{padding:9px 12px;background:#F1F5F9;color:#1B4F72;border-left:4px solid #2E7D5A;border-radius:8px;font-family:Nunito,sans-serif;font-weight:900;font-size:.95rem;margin-bottom:9px}.concat-month-sheet .concat-sheet-field{margin-bottom:9px}
 @media print{.concat-month-sheet{page-break-inside:avoid;margin-bottom:12px}.concat-month-title{font-size:.82rem;padding:6px 9px}.concat-sheet-head{font-size:.76rem;padding:6px 9px}.concat-sheet-body{padding:7px 9px}.concat-sheet-body .concat-text{font-size:.7rem;padding:5px 7px}}
+
+@media print{
+  @page{size:landscape;margin:8mm}
+  .concat-print-page{page-break-inside:avoid;min-height:180mm}
+  .concat-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-family:'Nunito Sans',sans-serif;font-size:.72rem;color:#1E293B}
+  .concat-print-table th,.concat-print-table td{border:1px solid #CBD5E1;padding:6px 7px;vertical-align:top;line-height:1.3;word-break:normal}
+  .concat-print-table thead th{background:#1B4F72;color:#fff;font-family:Nunito,sans-serif;font-weight:800;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .concat-print-table thead th:first-child{width:22%;text-align:left}
+  .concat-print-table tbody th{text-align:left;background:#F8FAFC;font-family:Nunito,sans-serif;font-weight:800;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .concat-print-table td:empty::after{content:'—';color:#94A3B8}
+}
