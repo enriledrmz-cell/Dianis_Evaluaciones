@@ -37,6 +37,7 @@
   <button class="tab-btn" onclick="showTab('ev',this)">📋 Evaluación</button>
   <button class="tab-btn" onclick="showTab('rs',this)">📊 Resumen</button>
   <button class="tab-btn" onclick="showTab('as',this)">📅 Asistencia</button>
+  <button class="tab-btn" onclick="showTab('ob',this)">📝 Observaciones de la maestra</button>
 </div>
 
 <div id="tab-al" class="sec active">
@@ -243,6 +244,20 @@
     <div class="concat-modal-head"><h3 id="concat-detail-title">Observaciones</h3><div class="concat-modal-actions"><button type="button" onclick="imprimirDetalleConcatenado()">🖨️ Imprimir tabla</button><button type="button" onclick="cerrarDetalleConcatenado()">✕</button></div></div>
     <div id="concat-detail-body" class="concat-modal-body"></div>
   </div>
+</div>
+<div id="tab-ob" class="sec">
+  <div class="card">
+    <h2>📝 Observaciones de la maestra</h2>
+    <p class="obs-info">Aquí puedes escribir observaciones libres de cada alumno. Las observaciones anteriores se recuperan automáticamente.</p>
+    <div class="eg">
+      <div class="fg"><label>Alumno</label><select id="ob-al"><option value="">— Selecciona —</option></select></div>
+      <div class="fg"><label>Campo formativo</label><select id="ob-campo"><option value="">— Selecciona —</option><option value="Lenguajes">🗣 Lenguajes</option><option value="Pensamiento Científico">🔬 Pensamiento Científico</option><option value="Ética, Naturaleza y Sociedades">🌎 Ética, Naturaleza y Sociedades</option><option value="De lo Humano y lo Comunitario">💛 De lo Humano y lo Comunitario</option></select></div>
+      <div class="fg"><label>Mes</label><select id="ob-mes"><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option><option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option><option>Julio</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Observación</label><textarea id="ob-txt" placeholder="Escribe aquí la observación…" style="width:100%;min-height:100px;padding:9px 12px;border:2px solid var(--bd);border-radius:9px;font-family:inherit;font-size:.9rem;resize:vertical"></textarea></div>
+    <div class="acts" style="margin-top:0"><button class="btn bp" onclick="guardarObs()">💾 Guardar observación</button></div>
+  </div>
+  <div class="card"><h2>📋 Historial de observaciones de la maestra</h2><div class="acts" style="margin-top:0;margin-bottom:12px"><button class="btn" style="background:#64748B;color:#fff" onclick="recuperarObservacionesMaestra()">🔄 Recuperar anteriores</button><button class="btn bd2" onclick="borrarTodoObs()">🗑 Borrar todas</button></div><div id="ob-cont" class="nd">Aún no hay observaciones guardadas.</div></div>
 </div>
 <div id="print-area" style="display:none"></div>
 

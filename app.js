@@ -344,9 +344,15 @@ function buildOb(){
   }); c.innerHTML=h;
 }
 function borrarObsCampo(al,campo){if(!confirm('¿Eliminar todas las observaciones de este campo para este alumno?'))return;window.sObs(gObs().filter(o=>!(o.al===al&&(o.campo||'General')===campo)));buildOb();}
+function recuperarObservacionesMaestra(){
+  const cantidad=gObs().length; buildOb();
+  alert(cantidad?`✅ Se recuperaron ${cantidad} observación${cantidad===1?'':'es'} guardada${cantidad===1?'':'s'} anteriormente.`:'No se encontraron observaciones anteriores guardadas en este navegador.');
+}
 function borrarObs(id){if(!confirm('¿Eliminar esta observación?'))return;window.sObs(gObs().filter(o=>o.id!==id));buildOb();}
 function borrarTodoObs(){if(!confirm('¿Borrar todas las observaciones?'))return;window.sObs([]);buildOb();}
+function pintarObAlumnos(){const sel=document.getElementById('ob-al');if(!sel)return;const actual=sel.value;sel.innerHTML='<option value="">— Selecciona —</option>'+gAl().map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');if(gAl().includes(actual))sel.value=actual;}
 function showTab(t,btn){
+  pintarObAlumnos();
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
@@ -354,6 +360,7 @@ function showTab(t,btn){
   if(t==='ev')buildForm();
   if(t==='rs')buildRS();
   if(t==='as')buildAsistencia();
+  if(t==='ob'){pintarObAlumnos();buildOb();}
 }
 
 // ─── ASISTENCIA ───

@@ -338,3 +338,5 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
   .concat-print-table tbody th{text-align:left;background:#F8FAFC;font-family:Nunito,sans-serif;font-weight:800;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .concat-print-table td:empty::after{content:'—';color:#94A3B8}
 }
+
+.obs-info{margin:-6px 0 16px;padding:10px 12px;border-radius:9px;background:#eef8f3;border:1px solid #c9ead8;color:#176b52;font-size:.82rem;line-height:1.45}
