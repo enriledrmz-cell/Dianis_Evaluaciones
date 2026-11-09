@@ -10,41 +10,6 @@ const NL={'1':'Requiere apoyo','2':'En proceso','3':'Esperado'};
 const NB={'1':'b1','2':'b2','3':'b3'};
 const NR={'1':'r1','2':'r2','3':'r3'};
 const NE={'1':'🔴','2':'🟡','3':'🟢'};
-// Altas personalizadas: se agregan como opciones nuevas y no reemplazan el catálogo oficial.
-(function cargarAltasPersonalizadas(){
-  try{
-    const altas=JSON.parse(localStorage.getItem('d_altas')||'{}');
-    CK.forEach(k=>{
-      (altas[k]?.contenidos||[]).forEach(c=>{if(c && c.nombre && !D[k].some(x=>x.nombre===c.nombre)){c.__agregado=true; D[k].push(c);}});
-      Object.entries(altas[k]?.pdaExtras||{}).forEach(([idx,lista])=>{const cont=D[k][Number(idx)]; (lista||[]).forEach(p=>{if(cont && p && p.texto && !cont.pdas.some(x=>x.texto===p.texto)){p.__agregadoPda=true; cont.pdas.push(p);}});});
-    });
-  }catch(e){ console.warn('No se pudieron cargar altas personalizadas',e); }
-})();
-function guardarAltas(){
-  const altas={};
-  CK.forEach(k=>{
-    const pdaExtras={};
-    (D[k]||[]).forEach((c,i)=>{const extra=(c.pdas||[]).filter(p=>p.__agregadoPda);if(extra.length)pdaExtras[i]=extra;});
-    altas[k]={contenidos:(D[k]||[]).slice().filter(c=>c.__agregado).map(c=>({nombre:c.nombre,pdas:c.pdas})),pdaExtras};
-  });
-  localStorage.setItem('d_altas',JSON.stringify(altas));
-}
-function agregarContenido(k){
-  const nombre=(prompt('Escribe el nuevo contenido del campo formativo:')||'').trim();
-  if(!nombre)return;
-  const cont={nombre,pdas:[],__agregado:true};
-  D[k].push(cont); guardarAltas(); renderCampo(k);
-}
-function agregarPda(k,idx){
-  const cont=D[k][idx]; if(!cont)return;
-  const texto=(prompt('Escribe el nuevo PDA para este contenido:')||'').trim();
-  if(!texto)return;
-  const p={texto,nivel_proceso:GRADO_NP[gradoActual]||'III',1:texto,2:texto,3:texto,4:texto};
-  cont.pdas.push(p); p.__agregadoPda=true; guardarAltas();
-  const cSel=document.getElementById(`c-${k}-${estado[k].findIndex(f=>f.cont===idx)}`);
-  CK.forEach(kk=>renderCampo(kk));
-}
-
 
 // Evita que nombres y textos guardados se interpreten como HTML.
 function esc(value){
@@ -129,230 +94,51 @@ function quitarRecItem(idx,al,i){
 }
 
 // ─── OBSERVACIONES ───
-function mesesSeleccionadosObs(){
-  const sel=document.getElementById('ob-meses');
-  return sel ? Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean) : [];
-}
 function guardarObs(){
   const al=document.getElementById('ob-al').value;
-  const campo=document.getElementById('ob-campo').value;
-  const mes=document.getElementById('ob-mes').value;
   const txt=document.getElementById('ob-txt').value.trim();
   if(!al){alert('Selecciona un alumno antes de guardar.');return;}
-  if(!campo){alert('Selecciona un campo formativo antes de guardar.');return;}
-  if(!mes){alert('Selecciona un mes antes de guardar.');return;}
   if(!txt){alert('Escribe una observación antes de guardar.');return;}
-  const reg={id:Date.now(),al,campo,mes,fecha:new Date().toLocaleDateString('es-MX'),txt};
+  const fecha=new Date().toLocaleDateString('es-MX');
+  const mes=document.getElementById('ob-mes')?.value||'';
+  const reg={id:Date.now(),al,fecha,mes,txt};
   const obs=gObs();obs.push(reg);window.sObs(obs);
   document.getElementById('ob-txt').value='';
-  alert(`✅ Observación de ${al} guardada.`); buildOb();
+  alert(`✅ Observación de ${al} guardada.`);
+  buildOb();
 }
-function obtenerObservacionesConsolidadas(){
-  // Observaciones capturadas manualmente en esta pestaña.
-  const todas=gObs().map(o=>({...o,campo:o.campo||'General'}));
-  // También incorpora las observaciones/niveles escritos en cada evaluación.
-  // Así se pueden juntar, por campo formativo, los meses elegidos.
-  gEv().forEach(ev=>{
-    CK.forEach(k=>{
-      const filas=Array.isArray(ev.campos?.[k])?ev.campos[k]:[ev.campos?.[k]].filter(Boolean);
-      filas.forEach((f,i)=>{
-        const texto=(f?.nivelTxt||'').trim();
-        if(texto) todas.push({id:Number(ev.id||0)+i,al:ev.al,campo:CMETA[k].label,mes:ev.mes,fecha:ev.fecha,txt:texto,origen:'evaluacion'});
-      });
-    });
-  });
-  return todas;
-}
-function mesesSeleccionadosConcatenar(){
-  const sel=document.getElementById('concat-meses');
-  return sel?Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean):[];
-}
-function pintarSelectConcatenar(){
-  const sel=document.getElementById('concat-al'); if(!sel)return;
-  const actuales=new Set(Array.from(sel.selectedOptions||[]).map(o=>o.value));
-  const alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
-  sel.innerHTML=alumnos.map(a=>`<option value="${esc(a)}"${actuales.has(a)?' selected':''}>${esc(a)}</option>`).join('');
-}
-function seleccionarTodosConcatenar(){
-  const sel=document.getElementById('concat-al'); if(!sel)return;
-  Array.from(sel.options).forEach(o=>o.selected=true);
-}
-function deseleccionarTodosConcatenar(){
-  const sel=document.getElementById('concat-al'); if(!sel)return;
-  Array.from(sel.options).forEach(o=>o.selected=false);
-}
-function alumnosSeleccionadosConcatenar(){
-  const sel=document.getElementById('concat-al');
-  return sel?Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean):[];
-}
-function concatenarObservaciones(){
-  const resultado=document.getElementById('concat-resultado'); if(!resultado)return;
-  const alumnos=alumnosSeleccionadosConcatenar();
-  const meses=mesesSeleccionadosConcatenar().map(m=>m.toLowerCase());
-  let lista=obtenerObservacionesConsolidadas().filter(o=>!alumnos.length||alumnos.includes(o.al));
-  if(meses.length)lista=lista.filter(o=>!o.mes||meses.includes(String(o.mes).trim().toLowerCase()));
-  if(!lista.length){resultado.innerHTML='<p class="nd">No hay observaciones para los alumnos y meses seleccionados.</p>';return;}
-  const grupos={};
-  lista.forEach(o=>{const clave=`${o.al}||${o.campo||'General'}`;(grupos[clave]??=[]).push(o);});
-  let html='';
-  Object.entries(grupos).forEach(([clave,items])=>{
-    const [al,campo]=clave.split('||');
-    const meta=Object.values(CMETA).find(m=>m.label===campo);
-    const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
-    const texto=items.map(o=>o.txt).join(' · ');
-    html+=`<div class="concat-card" onclick="verDetalleConcatenado('${esc(al).replace(/'/g,"\'")}')"><div class="concat-card-head" style="background:${color}"><label class="concat-select-label no-print" onclick="event.stopPropagation()"><input type="checkbox" class="concat-check" checked> Imprimir</label>${emoji} ${esc(campo)} <span>${esc(al)} · Ver hoja →</span></div><div class="concat-card-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(texto)}</div></div></div>`;
-  });
-  resultado.innerHTML=html;
-}
-function verDetalleConcatenado(al){
-  const mesesSeleccionados=mesesSeleccionadosConcatenar();
-  const mesesNorm=mesesSeleccionados.map(m=>m.toLowerCase());
-  let lista=obtenerObservacionesConsolidadas().filter(o=>o.al===al);
-  if(mesesNorm.length)lista=lista.filter(o=>!o.mes||mesesNorm.includes(String(o.mes).trim().toLowerCase()));
-  // Primero se agrupa por mes y después por campo formativo: una hoja visible por mes.
-  const porMes={};
-  lista.forEach(o=>{
-    const mes=o.mes||'Sin mes';
-    const clave=mes.toLowerCase();
-    if(!porMes[clave])porMes[clave]={nombre:mes,campo:{}};
-    const campo=o.campo||'General';
-    if(!porMes[clave].campo[campo])porMes[clave].campo[campo]=[];
-    porMes[clave].campo[campo].push(o);
-  });
-  const ordenMeses=mesesSeleccionados.length
-    ? mesesSeleccionados.map(m=>m.toLowerCase()).filter(m=>porMes[m])
-    : Object.keys(porMes);
-  let html='';
-  ordenMeses.forEach(clave=>{
-    const bloque=porMes[clave];
-    html+=`<section class="concat-month-sheet"><div class="concat-month-title">📅 ${esc(bloque.nombre)}</div>`;
-    Object.entries(bloque.campo).forEach(([campo,items])=>{
-      const meta=Object.values(CMETA).find(m=>m.label===campo); const color=meta?.color||'#2E7D5A'; const emoji=meta?.emoji||'📝';
-      html+=`<div class="concat-sheet-field"><div class="concat-sheet-head" style="background:${color}">${emoji} ${esc(campo)}</div><div class="concat-sheet-body"><div class="ml">OBSERVACIONES</div><div class="concat-text">${esc(items.map(o=>o.txt).join(' · '))}</div></div></div>`;
-    });
-    html+='</section>';
-  });
-  if(!html)html='<p class="nd">No hay observaciones para este alumno en los meses seleccionados.</p>';
-  document.getElementById('concat-detail-title').textContent='📋 '+al;
-  document.getElementById('concat-detail-body').innerHTML=html;
-  document.getElementById('concat-detail-modal').classList.add('open'); document.body.style.overflow='hidden';
-}
-function mesesParaImpresionConcatenada(){
-  const elegidos=mesesSeleccionadosConcatenar();
-  if(elegidos.length)return elegidos;
-  const vistos=[];
-  obtenerObservacionesConsolidadas().forEach(o=>{if(o.mes&&!vistos.some(m=>m.toLowerCase()===String(o.mes).toLowerCase()))vistos.push(o.mes);});
-  return vistos;
-}
-function htmlTablaAlumnoConcatenado(al,meses){
-  const registros=obtenerObservacionesConsolidadas().filter(o=>o.al===al);
-  const por={};
-  registros.forEach(o=>{const mes=String(o.mes||'Sin mes');const campo=o.campo||'General';if(!por[campo])por[campo]={};if(!por[campo][mes.toLowerCase()])por[campo][mes.toLowerCase()]=[];por[campo][mes.toLowerCase()].push(o.txt);});
-  const campos=Object.keys(por);
-  let h='<table class="concat-print-table"><thead><tr><th>Campo formativo</th>'+meses.map(m=>`<th>${esc(m)}</th>`).join('')+'</tr></thead><tbody>';
-  campos.forEach(campo=>{const meta=Object.values(CMETA).find(m=>m.label===campo);const color=meta?.color||'#2E7D5A';h+=`<tr><th style="border-left:4px solid ${color}">${esc(campo)}</th>`+meses.map(m=>`<td>${esc((por[campo][m.toLowerCase()]||[]).join(' · '))}</td>`).join('')+'</tr>';});
-  h+='</tbody></table>';
-  if(!campos.length)h='<p class="nd">No hay observaciones para este alumno en los meses seleccionados.</p>';
-  return h;
-}
-function imprimirDetalleConcatenado(){
-  const al=document.getElementById('concat-detail-title').textContent.replace(/^📋\s*/,'');
-  const meses=mesesParaImpresionConcatenada();
-  if(!meses.length){alert('No hay meses para imprimir.');return;}
-  const pa=document.getElementById('print-area');
-  pa.innerHTML='<div class="concat-print-page"><div class="print-header"><div><div class="print-title">📝 Observaciones por mes</div><div class="print-subtitle">'+esc(al)+'</div></div><img src="'+getLogoParaImpresion()+'" class="print-logo" alt="Libélula"></div>'+htmlTablaAlumnoConcatenado(al,meses)+'</div>';
-  window.print();
-}
-function escaparXmlExcel(valor){
-  return String(valor??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
-}
-function alumnosParaImpresionConcatenada(){
-  let alumnos=alumnosSeleccionadosConcatenar();
-  if(!alumnos.length)alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
-  return alumnos;
-}
-function exportarConcatenadasExcel(){
-  const alumnos=alumnosParaImpresionConcatenada();
-  const meses=mesesParaImpresionConcatenada();
-  if(!alumnos.length){alert('Selecciona al menos un alumno o guarda observaciones primero.');return;}
-  if(!meses.length){alert('Selecciona al menos un mes o guarda observaciones con mes.');return;}
-  const obs=obtenerObservacionesConsolidadas();
-  const worksheets=alumnos.map(al=>{
-    const registros=obs.filter(o=>o.al===al); const por={};
-    registros.forEach(o=>{const mes=String(o.mes||'Sin mes').toLowerCase();const campo=o.campo||'General';if(!por[campo])por[campo]={};if(!por[campo][mes])por[campo][mes]=[];por[campo][mes].push(o.txt);});
-    const campos=Object.keys(por);
-    const rows=[];
-    rows.push('<Row><Cell ss:StyleID="Title"><Data ss:Type="String">'+escaparXmlExcel(al)+'</Data></Cell></Row>');
-    rows.push('<Row><Cell ss:StyleID="Header"><Data ss:Type="String">Campo formativo</Data></Cell>'+meses.map(m=>'<Cell ss:StyleID="Header"><Data ss:Type="String">'+escaparXmlExcel(m)+'</Data></Cell>').join('')+'</Row>');
-    campos.forEach(campo=>rows.push('<Row><Cell ss:StyleID="Field"><Data ss:Type="String">'+escaparXmlExcel(campo)+'</Data></Cell>'+meses.map(m=>'<Cell><Data ss:Type="String">'+escaparXmlExcel((por[campo][m.toLowerCase()]||[]).join(' · '))+'</Data></Cell>').join('')+'</Row>'));
-    if(!campos.length)rows.push('<Row><Cell><Data ss:Type="String">Sin observaciones en los meses seleccionados</Data></Cell></Row>');
-    const nombre=String(al).replace(/[\\\/:?*\[\]]/g,'').slice(0,31)||'Alumno';
-    return '<Worksheet ss:Name="'+escaparXmlExcel(nombre)+'"><Table>'+rows.join('')+'</Table></Worksheet>';
-  }).join('');
-  const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Title"><Font ss:Bold="1" ss:Size="14"/><Interior ss:Color="#D6EFE3" ss:Pattern="Solid"/></Style><Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1B4F72" ss:Pattern="Solid"/></Style><Style ss:ID="Field"><Font ss:Bold="1"/></Style></Styles>'+worksheets+'</Workbook>';
-  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url;a.download='observaciones_concatenadas_'+new Date().toISOString().slice(0,10)+'.xls';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
-  alert('✅ Archivo de Excel descargado. Incluye una hoja por alumno.');
-}
-function imprimirTodosAlumnosConcatenados(){
-  let alumnos=alumnosSeleccionadosConcatenar();
-  if(!alumnos.length)alumnos=ordenAlfabetico([...new Set(obtenerObservacionesConsolidadas().map(o=>o.al).filter(Boolean))]);
-  const meses=mesesParaImpresionConcatenada();
-  if(!alumnos.length){alert('Selecciona al menos un alumno o guarda observaciones primero.');return;}
-  if(!meses.length){alert('Selecciona al menos un mes o guarda observaciones con mes.');return;}
-  const pa=document.getElementById('print-area');
-  pa.innerHTML=alumnos.map((al,i)=>`<div class="concat-print-page" style="${i?'page-break-before:always;':''}"><div class="print-header"><div><div class="print-title">📝 Observaciones por mes</div><div class="print-subtitle">${esc(al)}</div></div><img src="${getLogoParaImpresion()}" class="print-logo" alt="Libélula"></div>${htmlTablaAlumnoConcatenado(al,meses)}</div>`).join('');
-  window.print();
-}
-function cerrarDetalleConcatenado(e){
-  const modal=document.getElementById('concat-detail-modal');
-  if(e && e.target!==modal)return;
-  modal.classList.remove('open'); document.body.style.overflow='';
-}
-function imprimirConcatenadas(){
-  const seleccionadas=Array.from(document.querySelectorAll('#concat-resultado .concat-card')).filter(card=>card.querySelector('.concat-check')?.checked);
-  if(!seleccionadas.length){alert('Selecciona al menos un campo formativo para imprimir.');return;}
-  const pa=document.getElementById('print-area');
-  const contenido=seleccionadas.map(card=>{const copia=card.cloneNode(true);copia.querySelectorAll('.no-print').forEach(el=>el.remove());return copia.outerHTML;}).join('');
-  pa.innerHTML='<div class="print-header"><div><div class="print-title">📝 Observaciones concatenadas</div><div class="print-subtitle">Evaluación Preescolar</div></div><img src="'+getLogoParaImpresion()+'" class="print-logo" alt="Libélula"></div><div class="concat-print-list">'+contenido+'</div>';
-  window.print();
-}
+
 function buildOb(){
-  const obs=obtenerObservacionesConsolidadas(); const c=document.getElementById('ob-cont'); if(!c)return;
-  const meses=mesesSeleccionadosObs();
-  const normalizarMes=v=>String(v||'').trim().toLowerCase();
-  const mesesNorm=meses.map(normalizarMes);
-  const filtradas=mesesNorm.length?obs.filter(o=>{
-    // Los registros antiguos sin mes siguen visibles para no perder información.
-    if(!o.mes)return true;
-    return mesesNorm.includes(normalizarMes(o.mes));
-  }):obs;
-  if(!filtradas.length){c.innerHTML='<p class="nd">No hay observaciones para los meses seleccionados. Verifica que existan evaluaciones u observaciones guardadas en esos meses.</p>';return;}
+  const obs=gObs();
+  const c=document.getElementById('ob-cont');
+  if(!c)return;
+  if(!obs.length){c.innerHTML='<p class="nd">Aún no hay observaciones guardadas.</p>';return;}
   const por={};
-  filtradas.forEach(o=>{const campo=o.campo||'General'; if(!por[o.al])por[o.al]={}; if(!por[o.al][campo])por[o.al][campo]=[]; por[o.al][campo].push(o);});
-  let h=`<div style="margin-bottom:10px;color:var(--tx2);font-size:.82rem">Se muestran las observaciones concatenadas por campo formativo. Selecciona uno o varios meses para consultar un periodo.</div>`;
-  Object.entries(por).forEach(([al,campos])=>{
-    const total=Object.values(campos).reduce((n,a)=>n+a.length,0);
-    h+=`<div class="al-g"><div class="al-n">👤 ${esc(al)}<span class="al-c">${total} observación${total!==1?'es':''}</span></div><div class="ev-list">`;
-    Object.entries(campos).forEach(([campo,list])=>{
-      list.sort((a,b)=>(a.id||0)-(b.id||0));
-      const texto=list.map(o=>o.txt).join(' · ');
-      const mesesTexto=[...new Set(list.map(o=>o.mes).filter(Boolean))].join(', ');
-      h+=`<div class="ev-item" style="cursor:default"><div class="ev-h" style="position:relative"><div class="ev-hl">${esc(campo)}</div><div class="ev-hr">${esc(mesesTexto||'Sin mes')}</div><button onclick="borrarObsCampo('${esc(al).replace(/'/g,"\'")}','${esc(campo).replace(/'/g,"\'")}')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer" title="Eliminar observaciones de este campo">🗑</button></div><div style="padding:10px 14px;font-size:.88rem;color:var(--tx);line-height:1.5;white-space:pre-wrap">${esc(texto)}</div></div>`;
+  obs.forEach(o=>{if(!por[o.al])por[o.al]=[];por[o.al].push(o);});
+  Object.values(por).forEach(list=>list.sort((a,b)=>b.id-a.id));
+  let h='';
+  Object.entries(por).forEach(([al,list])=>{
+    h+=`<div class="al-g"><div class="al-n">👤 ${esc(al)}<span class="al-c">${list.length} observación${list.length>1?'es':''}</span></div><div class="ev-list">`;
+    list.forEach(o=>{
+      h+=`<div class="ev-item" style="cursor:default">
+        <div class="ev-h" style="position:relative"><div class="ev-hl">📅 ${esc(o.mes||'Sin mes')} · ${esc(o.fecha)}</div><div class="ev-hr"></div><button onclick="borrarObs(${o.id})" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" title="Eliminar esta observación">🗑</button></div>
+        <div style="padding:10px 14px;font-size:.88rem;color:var(--tx);line-height:1.5;white-space:pre-wrap">${o.txt}</div>
+      </div>`;
     });
     h+=`</div></div>`;
-  }); c.innerHTML=h;
+  });
+  c.innerHTML=h;
 }
-function borrarObsCampo(al,campo){if(!confirm('¿Eliminar todas las observaciones de este campo para este alumno?'))return;window.sObs(gObs().filter(o=>!(o.al===al&&(o.campo||'General')===campo)));buildOb();}
+
 function recuperarObservacionesMaestra(){
-  const cantidad=gObs().length; buildOb();
+  const cantidad=gObs().length;
+  buildOb();
   alert(cantidad?`✅ Se recuperaron ${cantidad} observación${cantidad===1?'':'es'} guardada${cantidad===1?'':'s'} anteriormente.`:'No se encontraron observaciones anteriores guardadas en este navegador.');
 }
 function borrarObs(id){if(!confirm('¿Eliminar esta observación?'))return;window.sObs(gObs().filter(o=>o.id!==id));buildOb();}
 function borrarTodoObs(){if(!confirm('¿Borrar todas las observaciones?'))return;window.sObs([]);buildOb();}
-function pintarObAlumnos(){const sel=document.getElementById('ob-al');if(!sel)return;const actual=sel.value;sel.innerHTML='<option value="">— Selecciona —</option>'+gAl().map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');if(gAl().includes(actual))sel.value=actual;}
+
 function showTab(t,btn){
-  pintarObAlumnos();
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
@@ -360,7 +146,7 @@ function showTab(t,btn){
   if(t==='ev')buildForm();
   if(t==='rs')buildRS();
   if(t==='as')buildAsistencia();
-  if(t==='ob'){pintarObAlumnos();buildOb();}
+  if(t==='ob')buildOb();
 }
 
 // ─── ASISTENCIA ───
@@ -572,7 +358,6 @@ function renderAl(){
     const curOb=selOb.value;
     selOb.innerHTML='<option value="">— Selecciona —</option>'+al.map(a=>`<option value="${esc(a)}"${a===curOb?' selected':''}>${esc(a)}</option>`).join('');
   }
-  pintarSelectConcatenar();
 }
 function ordenAlfabetico(al){
   return [...al].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
@@ -716,7 +501,7 @@ function renderCampo(k){
           <select class="sc" id="c-${k}-${fi}" onchange="onCont('${k}',${fi})" style="flex:1">
             <option value="">— Selecciona contenido —</option>${contOpts}
           </select>
-          <button type="button" title="Agregar un contenido nuevo sin modificar los existentes" onclick="agregarContenido('${k}')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">＋</button>
+          <button type="button" title="Editar texto de este contenido" onclick="if(estado['${k}'][${fi}].cont!==null)editarContenido('${k}',estado['${k}'][${fi}].cont);else alert('Primero selecciona un contenido.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
         </div>
       </div>
       <div style="margin-bottom:8px">
@@ -725,7 +510,7 @@ function renderCampo(k){
           <select class="sc" id="p-${k}-${fi}" onchange="onPDA('${k}',${fi})" style="flex:1">
             <option value="">— Selecciona primero el contenido —</option>
           </select>
-          <button type="button" title="Agregar un PDA nuevo sin modificar los existentes" onclick="if(estado['${k}'][${fi}].cont!==null)agregarPda('${k}',estado['${k}'][${fi}].cont);else alert('Primero selecciona un contenido.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">＋</button>
+          <button type="button" title="Editar texto de este PDA" onclick="if(estado['${k}'][${fi}].pdaIdx!==null)editarPda('${k}',estado['${k}'][${fi}].cont,estado['${k}'][${fi}].pdaIdx);else alert('Primero selecciona un PDA.')" style="background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;cursor:pointer">✏️</button>
         </div>
       </div>
       <div>
@@ -1043,7 +828,7 @@ function confirmarImprimirTodos(){
     const ev=porAlumno[al];
     const {titulo,cuerpo}=construirHTMLEvaluacion(ev);
     html+=`<div style="${i>0?'page-break-before:always;':''}padding-top:${i>0?'6mm':'0'}">
-      <div class="print-header"><div><div class="print-title">📋 Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div><img src="${getLogoParaImpresion()}" class="print-logo" alt=""></div>
+      <div class="print-header"><div><div class="print-title">📋 Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div><img src="${LOGO_MAESTRA_B64}" class="print-logo" alt=""></div>
       ${cuerpo}
     </div>`;
   });
@@ -1102,78 +887,47 @@ function confirmarBorrarFecha(){
 }
 function borrarUna(id){if(!confirm('¿Eliminar esta evaluación?'))return;window.sEv(gEv().filter(e=>e.id!==id));buildRS();}
 
-function leerJSONLocal(key,fallback){
-  try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch(e){return fallback;}
-}
-function firmaRegistro(reg){
-  if(reg && reg.id!==undefined && reg.id!==null && String(reg.id)!=='')return `id:${reg.id}`;
-  try{return JSON.stringify(reg);}catch(e){return String(reg);}
-}
-function unirSinDuplicados(actuales,nuevos){
-  const resultado=[...(Array.isArray(actuales)?actuales:[])];
-  const firmas=new Set(resultado.map(firmaRegistro));
-  (Array.isArray(nuevos)?nuevos:[]).forEach(item=>{const firma=firmaRegistro(item);if(!firmas.has(firma)){firmas.add(firma);resultado.push(item);}});
-  return resultado;
-}
 function exportarJSON(){
-  const datos={
-    formato:'evaluacion-preescolar-respaldo',
-    version:2,
-    exportadoEn:new Date().toISOString(),
-    alumnos:gAl(),
-    evaluaciones:gEv(),
-    observaciones:gObs(),
-    recomendaciones:gRec(),
-    asistencia:gAs(),
-    sobrescrituras:gOv(),
-    altas:leerJSONLocal('d_altas',{})
-  };
-  const contenido=JSON.stringify(datos,null,2);
-  const blob=new Blob([contenido],{type:'application/json;charset=utf-8'});
+  const datos={alumnos:gAl(),evaluaciones:gEv(),observaciones:gObs(),recomendaciones:gRec()};
+  const blob=new Blob([JSON.stringify(datos,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const fecha=new Date().toISOString().slice(0,10);
+  const fecha=new Date().toLocaleDateString('es-MX').replace(/\//g,'-');
   a.href=url;a.download=`respaldo_evaluaciones_${fecha}.json`;
-  a.style.display='none';document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
-  alert('✅ Respaldo completo descargado correctamente.');
+  a.click();URL.revokeObjectURL(url);
 }
+
 function importarJSON(e){
-  const input=e.target; const file=input.files?.[0];
+  const file=e.target.files[0];
   if(!file)return;
-  if(!file.name.toLowerCase().endsWith('.json')){alert('❌ Selecciona un archivo JSON de respaldo.');input.value='';return;}
   const reader=new FileReader();
   reader.onload=function(ev){
     try{
       const datos=JSON.parse(ev.target.result);
-      if(!datos || typeof datos!=='object' || !Array.isArray(datos.evaluaciones) || !Array.isArray(datos.alumnos)){
-        throw new Error('El archivo no tiene el formato de respaldo de la aplicación.');
-      }
-      const evsAntes=gEv(),obsAntes=gObs(),alAntes=gAl();
-      const evs=unirSinDuplicados(evsAntes,datos.evaluaciones);
-      const obs=unirSinDuplicados(obsAntes,datos.observaciones||[]);
-      const alumnos=ordenAlfabetico([...new Set([...alAntes,...datos.alumnos].filter(Boolean))]);
-      window.sAl(alumnos);window.sEv(evs);window.sObs(obs);
-      // Las recomendaciones se combinan por alumno sin repetir textos.
-      const rec= gRec();
-      Object.entries(datos.recomendaciones||{}).forEach(([al,lista])=>{
-        const incoming=Array.isArray(lista)?lista:(typeof lista==='string'?[lista]:[]);
-        rec[al]=[...new Set([...(rec[al]||[]),...incoming].map(x=>String(x).trim()).filter(Boolean))];
-      });
-      sRec(rec);
-      if(datos.asistencia && typeof datos.asistencia==='object')sAs(datos.asistencia);
-      if(datos.sobrescrituras && typeof datos.sobrescrituras==='object')sOv(datos.sobrescrituras);
-      if(datos.altas && typeof datos.altas==='object')localStorage.setItem('d_altas',JSON.stringify(datos.altas));
-      alert(`✅ Respaldo importado correctamente.\n\nAlumnos: ${alumnos.length}\nEvaluaciones nuevas: ${evs.length-evsAntes.length}\nObservaciones nuevas: ${obs.length-obsAntes.length}\n\nLa página se actualizará para cargar todos los datos.`);
-      setTimeout(()=>location.reload(),250);
+      if(!datos.evaluaciones)throw new Error('Formato inválido');
+      const evActuales=gEv();
+      const alActuales=gAl();
+      const obActuales=gObs();
+      // Merge: evitar duplicados por id
+      const idsActuales=new Set(evActuales.map(e=>e.id));
+      const nuevasEvs=datos.evaluaciones.filter(e=>!idsActuales.has(e.id));
+      const idsObActuales=new Set(obActuales.map(o=>o.id));
+      const nuevasObs=(datos.observaciones||[]).filter(o=>!idsObActuales.has(o.id));
+      const todosAl=ordenAlfabetico([...new Set([...alActuales,...(datos.alumnos||[])])]);
+      window.sAl(todosAl);
+      window.sEv([...evActuales,...nuevasEvs]);
+      window.sObs([...obActuales,...nuevasObs]);
+      sRec({...gRec(),...(datos.recomendaciones||{})});
+      renderAl();buildRS();buildOb();
+      alert(`✅ Importado: ${nuevasEvs.length} evaluación(es) nueva(s), ${nuevasObs.length} observación(es) nueva(s) y ${todosAl.length} alumno(s).`);
     }catch(err){
-      console.error('Error al importar respaldo:',err);
-      alert('❌ No se pudo importar el archivo. Selecciona un JSON generado por el botón «Exportar respaldo».');
-    }finally{input.value='';}
+      alert('❌ Archivo inválido. Asegúrate de usar un respaldo exportado desde esta app.');
+    }
+    e.target.value='';
   };
-  reader.onerror=()=>{alert('❌ No se pudo leer el archivo seleccionado.');input.value='';};
-  reader.readAsText(file,'utf-8');
+  reader.readAsText(file);
 }
+
 // ─── GRADO ───
 let gradoActual = 3; // default 3°
 
