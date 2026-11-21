@@ -215,64 +215,39 @@ header p{color:rgba(255,255,255,.72);font-size:.8rem;margin-top:2px}
 }
 
 @media print {
-  @page { size: letter; margin: 8mm; }
   body > *:not(#print-area) { display: none !important; }
   #print-area {
     display: block !important;
     position: static;
     background: #fff;
-    padding: 0;
+    padding: 10px 6px;
     font-family: 'Nunito Sans', sans-serif;
     color: #1E293B;
-    font-size: .78rem;
   }
   #print-area .print-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    border-bottom: 2px solid #2E7D5A;
-    padding-bottom: 6px;
-    margin-bottom: 8px;
-  }
-  #print-area .print-header > div:first-child { flex: 1; }
-  #print-area .print-logo {
-    height: 16mm;
-    width: auto;
-    object-fit: contain;
-    margin-left: auto;
+    gap: 14px;
+    border-bottom: 3px solid #2E7D5A;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
   }
   #print-area .print-title {
     font-family: Nunito, sans-serif;
     font-weight: 900;
-    font-size: .95rem;
+    font-size: 1.15rem;
     color: #1B4F72;
   }
   #print-area .print-subtitle {
-    font-size: .7rem;
+    font-size: .8rem;
     color: #475569;
-    margin-top: 1px;
+    margin-top: 2px;
   }
-  /* Las 4 materias en 2 columnas para aprovechar la hoja y caber en una sola página */
-  #print-area .mc-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    align-items: start;
-  }
-  .mc { page-break-inside: avoid; margin-bottom: 0 !important; border-radius: 6px !important; }
-  .mch { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 8px !important; font-size: .74rem !important; }
-  .mcb { padding: 6px 8px !important; }
-  .mr { margin-bottom: 4px !important; }
-  .ml { font-size: .6rem !important; margin-bottom: 1px !important; }
-  .mv { font-size: .7rem !important; line-height: 1.25 !important; padding: 4px 6px !important; }
-  .mnb { font-size: .7rem !important; padding: 2px 8px !important; }
+  .mc { page-break-inside: avoid; }
+  .mch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .no-print { display: none !important; }
-  .rec-box { page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 6px !important; padding: 6px 8px !important; }
   .rec-empty { display: none !important; }
-  .rec-lbl { font-size: .72rem !important; margin-bottom: 3px !important; }
-  .rec-item { padding: 3px 6px !important; font-size: .68rem !important; margin-bottom: 3px; }
-  .m-firma { margin-top: 8px !important; padding: 6px !important; }
-  .m-firma div { font-size: .68rem !important; }
+  .rec-box { page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
 /* ── Capa visual profesional ── */
@@ -292,4 +267,21 @@ header h1{letter-spacing:-.02em}header p{letter-spacing:.02em}.hico img{border-r
 input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900px){.cw{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.cw>.cc:last-child:nth-child(odd){grid-column:1/-1}}
 @media(max-width:700px){header{align-items:flex-start;flex-wrap:wrap}#fb-bar{width:100%;margin-left:0}#grado-bar{position:relative!important;top:auto!important}.tabs{top:0!important}.sec{padding-top:16px}}
 
-.obs-info{margin:-6px 0 16px;padding:10px 12px;border-radius:9px;background:#eef8f3;border:1px solid #c9ead8;color:#176b52;font-size:.82rem;line-height:1.45}.obs-info:before{content:'💡 ';}
+.nv-btn:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.5)} .to-top{position:fixed;right:20px;bottom:22px;width:46px;height:46px;border:0;border-radius:50%;background:#176b52;color:#fff;font-size:1.5rem;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:1200;cursor:pointer}.to-top:hover{background:#104c3c;transform:translateY(-2px)}
+
+.edit-mini{border:0;background:transparent;color:#176b52;font:700 .68rem Nunito,sans-serif;cursor:pointer;text-transform:none;margin-left:5px}.edit-mini:hover{text-decoration:underline}.nv-btn:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.5)}.to-top{position:fixed;right:20px;bottom:22px;width:46px;height:46px;border:0;border-radius:50%;background:#176b52;color:#fff;font-size:1.5rem;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.2);z-index:1200;cursor:pointer}.to-top:hover{background:#104c3c;transform:translateY(-2px)}
+.nv-row{flex-wrap:wrap}.nv-btn{min-width:calc(25% - 5px)}.nv-btn.s4{background:var(--rl);color:var(--rojo);border-color:#FCA5A5}.nv-result.r4{background:var(--rl);color:var(--rojo);border:1.5px solid #FCA5A5}.b4{background:var(--rl);color:var(--rojo)}
+@media(max-width:600px){.nv-btn{min-width:calc(50% - 3px)}}
+
+.student-select-actions{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px}.mini-action{border:1px solid #9bd4b6;background:#e9f8ef;color:#176b52;border-radius:8px;padding:5px 9px;font:700 .72rem Nunito,sans-serif;cursor:pointer}.mini-action.secondary{background:#f1f5f9;color:#475569;border-color:#d7e0e8}.mini-action:hover{filter:brightness(.97);transform:translateY(-1px)}#s-al{min-height:132px;background:#fff!important}#s-al option{padding:7px 9px;border-radius:5px;margin:2px}#s-al option:checked{background:linear-gradient(#d8f1e3,#d8f1e3);color:#104c3c;font-weight:800}
+
+.selected-summary{margin-top:7px;padding:8px 10px;border-radius:8px;background:#eef8f3;border:1px solid #c9ead8;color:#176b52;font-size:.78rem;line-height:1.45}.selection-empty{color:#64748b}.student-levels{margin-top:10px;padding:8px 10px;background:#f8fafc;border-radius:9px;border:1px solid #e2e8f0}.student-level-title{font-size:.7rem;font-weight:800;text-transform:uppercase;color:#64748b;margin-bottom:5px}.student-level-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid #e8eef3;font-size:.78rem;font-weight:700;color:#334155}.student-level-row:first-of-type{border-top:0}.student-nv{width:28px;height:26px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#64748b;font-weight:800;cursor:pointer;margin-left:3px}.student-nv.chosen.s1{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}.student-nv.chosen.s2{background:#fef3c7;color:#a16207;border-color:#fcd34d}.student-nv.chosen.s3{background:#dcfce7;color:#15803d;border-color:#86efac}
+
+@media print{
+  #print-area .print-logo{width:58px;height:58px;object-fit:contain;border-radius:12px;background:#eef8f3;padding:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print-area .print-observations{margin-top:18px;border:1px solid #c9ead8;border-left:4px solid #2E7D5A;border-radius:8px;padding:10px 12px;page-break-inside:avoid}
+  #print-area .print-observations-title{font-family:Nunito,sans-serif;font-weight:900;color:#176b52;margin-bottom:7px}
+  #print-area .print-observation{padding:7px 0;border-top:1px solid #e5eee9;line-height:1.45;white-space:pre-wrap}
+  #print-area .print-observation:first-of-type{border-top:0}
+  #print-area .print-observation-date{font-size:.72rem;color:#64748b;font-weight:800;margin-bottom:2px}
+}
