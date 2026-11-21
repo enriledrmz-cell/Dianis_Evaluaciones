@@ -316,3 +316,5 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
   #print-area .print-sheet{display:block;page-break-after:always;break-after:page;min-height:0}
   #print-area .print-sheet:last-child{page-break-after:auto;break-after:auto}
 }
+
+.print-month-select{min-height:40px;border:1px solid #cbd5e1;border-radius:8px;padding:0 9px;background:#fff;color:#1e3a4a;font:700 .78rem Nunito,sans-serif}

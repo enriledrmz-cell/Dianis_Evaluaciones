@@ -24,6 +24,18 @@ function imprimirEval(){
 
 function imprimirTodasEval(){
   const evaluaciones=typeof gEv==='function'?gEv():[];
+  imprimirListaEvaluaciones(evaluaciones);
+}
+
+function imprimirMesEval(){
+  const mes=document.getElementById('print-mes')?.value||'Todos';
+  const evaluaciones=typeof gEv==='function'?gEv():[];
+  const filtradas=mes==='Todos'?evaluaciones:evaluaciones.filter(ev=>ev.mes===mes);
+  if(!filtradas.length){alert(`No hay evaluaciones guardadas de ${mes}.`);return;}
+  imprimirListaEvaluaciones(filtradas);
+}
+
+function imprimirListaEvaluaciones(evaluaciones){
   if(!evaluaciones.length){alert('Aún no hay evaluaciones guardadas para imprimir.');return;}
   const logo=document.querySelector('header img[alt="libélula"]')?.src||'';
   const pa=document.getElementById('print-area');
