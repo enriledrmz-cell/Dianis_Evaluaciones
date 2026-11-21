@@ -2,15 +2,14 @@ function crearBloqueImpresion(titulo,cuerpo,logo){
   const holder=document.createElement('div');
   holder.innerHTML=cuerpo;
   const cards=Array.from(holder.children).filter(el=>el.classList.contains('mc'));
-  const observaciones=Array.from(holder.children).filter(el=>el.classList.contains('print-observations'));
+  // Las observaciones escritas no se imprimen; las recomendaciones sí se conservan.
   const otros=Array.from(holder.children).filter(el=>!el.classList.contains('mc')&&!el.classList.contains('print-observations'));
   const tarjetas=cards.map(el=>el.outerHTML).join('');
-  const obs=observaciones.map(el=>el.outerHTML).join('');
   const resto=otros.map(el=>el.outerHTML).join('');
   return `<section class="print-sheet"><div class="print-header">
     <div><div class="print-title">Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div>
     ${logo ? `<img class="print-logo" src="${logo}" alt="Logo de libélula">` : ''}
-  </div><div class="print-grid">${tarjetas}</div>${obs}${resto}</section>`;
+  </div><div class="print-grid">${tarjetas}</div>${resto}</section>`;
 }
 
 function imprimirEval(){
