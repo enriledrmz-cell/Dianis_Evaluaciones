@@ -5,7 +5,12 @@ function crearBloqueImpresion(titulo,cuerpo,logo){
   // Las observaciones escritas no se imprimen; las recomendaciones sí se conservan.
   const otros=Array.from(holder.children).filter(el=>!el.classList.contains('mc')&&!el.classList.contains('print-observations'));
   const tarjetas=cards.map(el=>el.outerHTML).join('');
-  const resto=otros.map(el=>el.outerHTML).join('');
+  let resto=otros.map(el=>el.outerHTML).join('');
+  // Respaldo: si el detalle no trae el bloque, recuperarlo directamente del alumno.
+  if(!holder.querySelector('.rec-box .rec-item') && typeof recListStaticHTML==='function'){
+    const alumno=String(titulo).split(' · ')[0].trim();
+    resto+=recListStaticHTML(alumno);
+  }
   return `<section class="print-sheet"><div class="print-header">
     <div><div class="print-title">Evaluación Preescolar</div><div class="print-subtitle">${esc(titulo)}</div></div>
     ${logo ? `<img class="print-logo" src="${logo}" alt="Logo de libélula">` : ''}
@@ -26,6 +31,14 @@ function imprimirPorId(id){
   openModal(id);
   imprimirEval();
   closeModal();
+}
+
+function imprimirFechaEval(){
+  const fecha=document.getElementById('print-fecha')?.value||'';
+  if(!fecha){alert('Selecciona una fecha antes de imprimir.');return;}
+  const evaluaciones=typeof gEv==='function'?gEv().filter(ev=>ev.fecha===fecha):[];
+  if(!evaluaciones.length){alert('No hay evaluaciones guardadas para esa fecha.');return;}
+  imprimirListaEvaluaciones(evaluaciones);
 }
 
 function imprimirTodasEval(){

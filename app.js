@@ -628,6 +628,13 @@ function guardar(){
 function buildRS(){
   const evs=gEv();
   const c=document.getElementById('rs-cont');
+  const fechaSel=document.getElementById('print-fecha');
+  if(fechaSel){
+    const actual=fechaSel.value;
+    const fechas=[...new Set(evs.map(e=>e.fecha).filter(Boolean))];
+    fechaSel.innerHTML='<option value="">Selecciona una fecha</option>'+fechas.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    if(fechas.includes(actual))fechaSel.value=actual;
+  }
   if(!evs.length){c.innerHTML='<p class="nd">Aún no hay evaluaciones guardadas.</p>';return;}
   const por={};
   evs.forEach(e=>{if(!por[e.al])por[e.al]=[];por[e.al].push(e);});
