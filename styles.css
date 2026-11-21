@@ -293,3 +293,21 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
 @media print{
   #print-area .print-observations-first{margin-top:0;margin-bottom:12px;page-break-inside:avoid}
 }
+
+@media print{
+  #print-area{padding:8px 10px;font-family:Arial,sans-serif}
+  #print-area .print-header{justify-content:space-between;align-items:center;gap:12px;padding:0 2px 7px;margin-bottom:7px;border-bottom:3px solid #2E7D5A}
+  #print-area .print-logo{order:2;width:48px;height:48px;border-radius:0;background:transparent;padding:0}
+  #print-area .print-title{font-family:Arial,sans-serif;font-size:11pt;font-weight:700;color:#1B4F72}
+  #print-area .print-subtitle{font-size:7.5pt;color:#475569;margin-top:2px}
+  #print-area .print-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:0}
+  #print-area .print-grid .mc{margin:0;border-radius:4px;border:1px solid #cbd5e1;page-break-inside:avoid;break-inside:avoid}
+  #print-area .print-grid .mch{padding:5px 8px;font-size:8.5pt;line-height:1.1}
+  #print-area .print-grid .mcb{padding:6px 8px}
+  #print-area .print-grid .mr{margin-bottom:5px}
+  #print-area .print-grid .ml{font-size:6.5pt;margin-bottom:2px}
+  #print-area .print-grid .mv{font-size:7.2pt;line-height:1.25}
+  #print-area .print-grid .mnb{font-size:7pt;padding:2px 7px}
+  #print-area .print-observations-first{margin-top:8px;margin-bottom:8px}
+  #print-area .rec-box{font-size:7.5pt;margin-top:8px}
+}
