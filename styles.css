@@ -311,3 +311,8 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
   #print-area .print-observations-first{margin-top:8px;margin-bottom:8px}
   #print-area .rec-box{font-size:7.5pt;margin-top:8px}
 }
+
+@media print{
+  #print-area .print-sheet{display:block;page-break-after:always;break-after:page;min-height:0}
+  #print-area .print-sheet:last-child{page-break-after:auto;break-after:auto}
+}
