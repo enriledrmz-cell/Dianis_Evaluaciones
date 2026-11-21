@@ -285,3 +285,7 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
   #print-area .print-observation:first-of-type{border-top:0}
   #print-area .print-observation-date{font-size:.72rem;color:#64748b;font-weight:800;margin-bottom:2px}
 }
+
+/* Restauración del tamaño original de los cuadros de evaluación: tres niveles en una fila. */
+.nv-btn{min-width:0;min-height:initial}
+@media(max-width:600px){.nv-btn{min-width:0}}
