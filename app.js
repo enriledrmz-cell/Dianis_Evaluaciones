@@ -643,7 +643,7 @@ function buildRS(){
         return`<span class="ebadge ${NB[n]}">${CMETA[k].emoji} ${NE[n]} ${NL[n]}</span>`;
       }).join('');
       h+=`<div class="ev-item" onclick="openModal(${ev.id})">
-        <div class="ev-h" style="position:relative"><div class="ev-hl">📅 ${esc(ev.mes)}</div><div class="ev-hr">${esc(ev.fecha)} · ver detalle →</div><button onclick="event.stopPropagation();borrarUna(${ev.id})" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" title="Eliminar esta evaluación">🗑</button></div>
+        <div class="ev-h" style="position:relative"><div class="ev-hl">📅 ${esc(ev.mes)}</div><div class="ev-hr">${esc(ev.fecha)} · ver detalle → <button class="print-one-btn" onclick="event.stopPropagation();imprimirPorId(${ev.id})" title="Imprimir esta evaluación">🖨️</button></div><button onclick="event.stopPropagation();borrarUna(${ev.id})" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;padding:3px 8px;font-size:.75rem;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" title="Eliminar esta evaluación">🗑</button></div>
         <div class="ev-prev">${badges}</div>
       </div>`;
     });

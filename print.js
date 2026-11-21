@@ -21,6 +21,13 @@ function imprimirEval(){
   imprimirCuandoListo(pa);
 }
 
+function imprimirPorId(id){
+  if(typeof openModal!=='function')return;
+  openModal(id);
+  imprimirEval();
+  closeModal();
+}
+
 function imprimirTodasEval(){
   const evaluaciones=typeof gEv==='function'?gEv():[];
   imprimirListaEvaluaciones(evaluaciones);

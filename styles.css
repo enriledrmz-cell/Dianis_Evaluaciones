@@ -318,3 +318,6 @@ input,select,button{-webkit-tap-highlight-color:transparent}@media(min-width:900
 }
 
 .print-month-select{min-height:40px;border:1px solid #cbd5e1;border-radius:8px;padding:0 9px;background:#fff;color:#1e3a4a;font:700 .78rem Nunito,sans-serif}
+
+.print-one-btn{border:0;border-radius:5px;background:rgba(255,255,255,.2);color:#fff;padding:2px 5px;cursor:pointer;font-size:.78rem;margin-left:3px}.print-one-btn:hover{background:rgba(255,255,255,.35)}
+@media print{#print-area .rec-box{display:block!important;visibility:visible!important}.print-one-btn{display:none!important}}
