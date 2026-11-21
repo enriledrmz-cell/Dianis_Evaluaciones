@@ -657,6 +657,7 @@ function openModal(id){
   const ev=gEv().find(e=>e.id===id);
   if(!ev)return;
   const gradoLabel=ev.grado?`${ev.grado}° Preescolar`:'';
+  const observaciones=gObs().filter(o=>o.al===ev.al).sort((a,b)=>(b.id||0)-(a.id||0));
   document.getElementById('m-title').textContent=`${ev.al} · ${ev.mes}${gradoLabel?' · '+gradoLabel:''} · ${ev.fecha}`;
   let h='';
   CK.forEach(k=>{
@@ -699,13 +700,13 @@ function openModal(id){
     h+=`</div></div>`;
   });
   if(!h) h='<p style="color:#94A3B8;text-align:center;padding:20px">Esta evaluación no tiene datos registrados.</p>';
-  h+=recListStaticHTML(ev.al);
-  const observaciones=gObs().filter(o=>o.al===ev.al).sort((a,b)=>(b.id||0)-(a.id||0));
   if(observaciones.length){
-    h+=`<div class="print-observations"><div class="print-observations-title">📝 Observaciones del alumno</div>`;
-    observaciones.forEach(o=>{h+=`<div class="print-observation"><div class="print-observation-date">${esc(o.fecha||'')}</div><div>${esc(o.txt||'')}</div></div>`;});
-    h+='</div>';
+    let obsHtml=`<div class="print-observations print-observations-first"><div class="print-observations-title">📝 Observaciones de la maestra</div>`;
+    observaciones.forEach(o=>{obsHtml+=`<div class="print-observation"><div class="print-observation-date">${esc(o.fecha||'')}</div><div>${esc(o.txt||'')}</div></div>`;});
+    obsHtml+='</div>';
+    h=obsHtml+h;
   }
+  h+=recListStaticHTML(ev.al);
   // Agregar nombre al final
   h+=`<div style="margin-top:20px;padding:14px 18px;border-top:2px solid #DDE3ED;text-align:center">
     <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;color:#1B4F72">Lic. Diana Evelyn Ramírez Lara</div>
